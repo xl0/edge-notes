@@ -47,6 +47,7 @@ Update the files as you go, keep the updates concise. Not a changelog - content 
 - Only commit when directly instructed. 
 - When you commit, it's possible that the worktree contains unrelated changes and untracked files. Don't blindly add files - only commit what's necessary.
 - **NEVER** use destructive commands like `git reset --hard` or `git checkout --` unless specifically requested or approved by the user.
+
 ## Communication style
 
 Respond terse like smart caveman. All technical substance stay. Only fluff die.
@@ -68,7 +69,9 @@ Yes: "Bug in auth middleware. Token expiry check use `<` not `<=`. Fix:"
 
 **"Explain database connection pooling."**
 
-> Pool = reuse DB conn. Skip handshake -> fast under load.## Python
+> Pool = reuse DB conn. Skip handshake -> fast under load.
+
+## Python
 - Write your code in the style of Jeremy Howard / George Hotz - compress it vertically, fewer lines - better.
 - You may install packages, double-check with the user if in doubt.
 

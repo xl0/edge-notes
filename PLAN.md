@@ -3,7 +3,8 @@
 ## Birds eye
 
 - Keep report reproducible: theory table + published refs + local GPU benchmarks.
-- Use llama.cpp for GGUF dtype/quant matrix.
+- Use nbdev v3 only as static docs/README builder: notebooks/scripts in `nbs/`, config in `pyproject.toml`, no generated package.
+- Use plain Python script for llama.cpp GGUF dtype/quant matrix.
 - Keep large local deps/caches out of git.
 
 ## Todo
@@ -13,5 +14,7 @@
 - [x] Add llama.cpp benchmark harness.
 - [x] Run Qwen3.5 GGUF quant matrix as disk/VRAM allows.
 - [x] Append llama.cpp results to notebook.
+- [x] Convert repo to nbdev v3 static docs.
+- [x] Move benchmark harness back to plain script under `nbs/`.
 - [x] Update CODE.md.
 - [ ] Optional: run Q5_K_M rows if more disk headroom is available.

@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "exploring-edge-perf"
+version = "0.0.1"
+description = "Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{name = "Alexey Zaytsev", email = "alexey.zaytsev@gmail.com"}]
+keywords = ["nbdev", "llm", "edge-ai", "llama-cpp", "benchmarks"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = [
+    "huggingface_hub",
+    "ipython",
+    "pandas",
+]
+
+[project.optional-dependencies]
+dev = ["nbdev>=3,<4"]
+
+[project.urls]
+Repository = "https://github.com/xl0/exploring-edge-perf"
+Documentation = "https://xl0.github.io/exploring-edge-perf/"
+
+[tool.setuptools]
+packages = []
+
+[tool.nbdev]
+branch = "master"
+nbs_path = "nbs"
+doc_path = "_docs"

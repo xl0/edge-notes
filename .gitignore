@@ -4,6 +4,12 @@
 .config/
 .cuda_cache/
 .deps/
+_docs/
+_proc/
+build/
+dist/
+*.egg-info/
+.quarto/
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
