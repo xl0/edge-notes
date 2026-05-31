@@ -1,0 +1,13 @@
+export HF_HOME="$PWD/.hf"
+export HF_HUB_CACHE="$PWD/.hf/hub"
+export HF_XET_CACHE="$PWD/.hf/xet"
+export HF_HUB_DISABLE_XET=1
+export DO_NOT_TRACK=1
+export XDG_CACHE_HOME="$PWD/.cache"
+export XDG_CONFIG_HOME="$PWD/.config"
+export CUDA_CACHE_PATH="$PWD/.cuda_cache"
+export LLAMA_CPP_DIR="$PWD/.deps/llama.cpp"
+export LLAMA_CPP_BUILD="$LLAMA_CPP_DIR/build"
+export CUDA_HOME="$PWD/.venv/lib/python3.12/site-packages/nvidia/cu13"
+export PATH="$CUDA_HOME/bin:$PATH"
+export LD_LIBRARY_PATH="$CUDA_HOME/lib:$LLAMA_CPP_BUILD/bin:${LD_LIBRARY_PATH:-}"
