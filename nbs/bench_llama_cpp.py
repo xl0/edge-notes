@@ -12,9 +12,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MATRIX = {
-    "2B": ("unsloth/Qwen3.5-2B-GGUF", ["BF16", "Q8_0", "Q6_K", "Q4_K_M"]),
-    "4B": ("unsloth/Qwen3.5-4B-GGUF", ["BF16", "Q8_0", "Q6_K", "Q4_K_M"]),
-    "9B": ("unsloth/Qwen3.5-9B-GGUF", ["Q8_0", "Q6_K", "Q4_K_M"]),
+    "2B": ("unsloth/Qwen3.5-2B-GGUF", ["BF16", "Q8_0", "Q4_K_M"]),
+    "4B": ("unsloth/Qwen3.5-4B-GGUF", ["BF16", "Q8_0", "Q4_K_M"]),
+    "9B": ("unsloth/Qwen3.5-9B-GGUF", ["Q8_0", "Q4_K_M"]),
 }
 DEFAULT_BENCH = ROOT/".deps/llama.cpp/build/bin/llama-bench"
 DEFAULT_JSONL = Path("llama_cpp_tps_results.jsonl")
