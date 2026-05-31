@@ -5,35 +5,21 @@ Uses llama-bench JSONL rows:
 - n_prompt > 0 => prompt eval / prefill proxy
 - n_gen > 0 => decode TPS
 
-Fresh benchmark runs replace the result JSONL before writing rows.
+Fresh benchmark runs replace the cwd-local result JSONL before writing rows.
 """
-import argparse, json, os, shutil, subprocess, sys, threading, time
+import argparse, json, os, shutil, subprocess, threading, time
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
 MATRIX = {
     "2B": ("unsloth/Qwen3.5-2B-GGUF", ["BF16", "Q8_0", "Q6_K", "Q4_K_M"]),
     "4B": ("unsloth/Qwen3.5-4B-GGUF", ["BF16", "Q8_0", "Q6_K", "Q4_K_M"]),
     "9B": ("unsloth/Qwen3.5-9B-GGUF", ["Q8_0", "Q6_K", "Q4_K_M"]),
 }
-DEFAULT_BENCH = Path(".deps/llama.cpp/build/bin/llama-bench")
+DEFAULT_BENCH = ROOT/".deps/llama.cpp/build/bin/llama-bench"
 DEFAULT_JSONL = Path("llama_cpp_tps_results.jsonl")
 
-def repo_root(start=None):
-    start = Path(start or Path.cwd()).resolve()
-    for p in (start, *start.parents):
-        if (p/"pyproject.toml").exists(): return p
-    return Path.cwd().resolve()
-
-def in_root(path, root):
-    path = Path(path)
-    return path if path.is_absolute() else root/path
-
-def in_cwd(path):
-    path = Path(path)
-    return path if path.is_absolute() else Path.cwd()/path
-
 def parse_args(argv=None):
-    if argv is None and Path(sys.argv[0]).name == "ipykernel_launcher.py": argv = []
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--profile", choices=["smoke", "matrix"], default="smoke")
     p.add_argument("--list-matrix", action="store_true")
@@ -65,14 +51,14 @@ def cases(args):
             if qfilter and q not in qfilter: continue
             yield size, repo, q, f"Qwen3.5-{size}-{q}.gguf"
 
-def set_local_env(env, root):
-    env.setdefault("HF_HOME", str(root/".hf")); env.setdefault("HF_HUB_CACHE", str(root/".hf/hub")); env.setdefault("HF_XET_CACHE", str(root/".hf/xet"))
-    env.setdefault("XDG_CACHE_HOME", str(root/".cache")); env.setdefault("XDG_CONFIG_HOME", str(root/".config")); env.setdefault("HF_HUB_DISABLE_XET", "1")
-    cuda = root/".venv/lib/python3.12/site-packages/nvidia/cu13"
+def set_local_env(env):
+    env.setdefault("HF_HOME", str(ROOT/".hf")); env.setdefault("HF_HUB_CACHE", str(ROOT/".hf/hub")); env.setdefault("HF_XET_CACHE", str(ROOT/".hf/xet"))
+    env.setdefault("XDG_CACHE_HOME", str(ROOT/".cache")); env.setdefault("XDG_CONFIG_HOME", str(ROOT/".config")); env.setdefault("HF_HUB_DISABLE_XET", "1")
+    cuda = ROOT/".venv/lib/python3.12/site-packages/nvidia/cu13"
     if cuda.exists():
         env.setdefault("CUDA_HOME", str(cuda))
         env["PATH"] = f"{cuda/'bin'}:{env.get('PATH','')}"
-        env["LD_LIBRARY_PATH"] = f"{cuda/'lib'}:{root/'.deps/llama.cpp/build/bin'}:{env.get('LD_LIBRARY_PATH','')}"
+        env["LD_LIBRARY_PATH"] = f"{cuda/'lib'}:{ROOT/'.deps/llama.cpp/build/bin'}:{env.get('LD_LIBRARY_PATH','')}"
     return env
 
 def download(repo, file, local_only=False):
@@ -122,16 +108,12 @@ def print_case(row):
     print(f"{row['size']:>2} {row['quant']:>6} {row['phase']:<7} {row['avg_ts']:8.2f} tok/s {row['ms_per_token']:7.3f} ms/tok{vram}", flush=True)
 
 def main(argv=None):
-    root = repo_root(Path(__file__).resolve().parent if "__file__" in globals() else None)
-    args = parse_args(argv)
-    args.llama_bench = in_root(args.llama_bench, root)
-    args.jsonl = in_cwd(args.jsonl)
-    env = set_local_env(os.environ.copy(), root); os.environ.update(env)
+    args = parse_args(argv); env = set_local_env(os.environ.copy()); os.environ.update(env)
     cs = list(cases(args))
     if args.list_matrix:
         for c in cs: print(" ".join(c))
         return
-    if not args.download_only and not args.llama_bench.exists(): raise SystemExit(f"missing {args.llama_bench}; run {root/'build_llama_cpp.sh'}")
+    if not args.download_only and not args.llama_bench.exists(): raise SystemExit(f"missing {args.llama_bench}; run {ROOT/'build_llama_cpp.sh'}")
     args.jsonl.parent.mkdir(parents=True, exist_ok=True)
     if not args.download_only: args.jsonl.unlink(missing_ok=True)
     for size, repo, quant, file in cs:

@@ -240,95 +240,33 @@ llama.cpp commit `d749821`, CUDA backend, `llama-bench`, GPU
 `.deps/llama.cpp` plus CUDA compiler/libs from `.venv` (`nvidia/cu13`);
 build/runtime env is in `bench_env.sh` and `build_llama_cpp.sh`.
 
-Models are `unsloth/Qwen3.5-{2B,4B,9B}-GGUF`. Run config: prompt eval =
-512 tokens, generation eval = 256 tokens, repetitions = 3, batch/ubatch
-defaults (`2048/512`), all layers GPU (`-ngl -1`), KV cache `f16`,
-flash-attn `auto`. llama.cpp reports prompt eval tok/s as prefill proxy
-and eval tok/s as decode TPS. GPU memory is sampled with `nvidia-smi`;
-delta subtracts desktop baseline. 9B BF16 skipped: GGUF is 17.92 GB
-before KV/overhead, over local 16GB VRAM.
+Models are `unsloth/Qwen3.5-{2B,4B,9B}-GGUF`. Run config: prompt
+processing = 512 tokens, generation eval = 256 tokens, repetitions = 3,
+batch/ubatch defaults (`2048/512`), all layers GPU (`-ngl -1`), KV cache
+`f16`, flash-attn `auto`. llama.cpp reports prompt processing tok/s
+(`n_prompt=512`) separately from decode tok/s (`n_gen=256`). GPU memory
+is sampled with `nvidia-smi`; delta subtracts desktop baseline. 9B BF16
+skipped: GGUF is 17.92 GB before KV/overhead, over local 16GB VRAM.
 
-To replace results with a fresh run, run the script next to this
-notebook. From repo root:
+Run the next hidden cell from this notebook to replace
+`llama_cpp_tps_results.jsonl` next to `index.ipynb`, then render the
+table. The script deletes that result file before writing fresh rows.
 
-``` bash
-python nbs/bench_llama_cpp.py --profile matrix --prompt-tokens 512 --gen-tokens 256 --repetitions 3
-```
+Prompt processing is prompt-ingest throughput, not generation
+throughput; compare decode to decode.
 
-or from `nbs/`:
-
-``` bash
-python bench_llama_cpp.py --profile matrix --prompt-tokens 512 --gen-tokens 256 --repetitions 3
-```
-
-The script writes `llama_cpp_tps_results.jsonl` in the current working
-directory. The next cell renders the newest matching results file from
-cwd, `nbs/`, or repo root.
-
-``` python
-!python bench_llama_cpp.py --profile matrix --prompt-tokens 512 --gen-tokens 256 --repetitions 3
-```
-
-    model 2B BF16: /home/xl0/work/work/tm/exploring-edge-perf/.hf/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-BF16.gguf
-    2B   BF16 prefill  5762.19 tok/s   0.174 ms/tok, peak 4788 MiB
-    2B   BF16 decode     90.92 tok/s  10.999 ms/tok, peak 4788 MiB
-    Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-    model 2B Q8_0: /home/xl0/work/work/tm/exploring-edge-perf/.hf/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q8_0.gguf
-    2B   Q8_0 prefill  7022.79 tok/s   0.142 ms/tok, peak 3058 MiB
-    2B   Q8_0 decode    144.86 tok/s   6.903 ms/tok, peak 3058 MiB
-    model 2B Q6_K: /home/xl0/work/work/tm/exploring-edge-perf/.hf/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q6_K.gguf
-    2B   Q6_K prefill  6622.50 tok/s   0.151 ms/tok, peak 2640 MiB
-    2B   Q6_K decode    153.48 tok/s   6.515 ms/tok, peak 2640 MiB
-    model 2B Q4_K_M: /home/xl0/work/work/tm/exploring-edge-perf/.hf/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf
-    2B Q4_K_M prefill  6919.02 tok/s   0.145 ms/tok, peak 2360 MiB
-    2B Q4_K_M decode    182.62 tok/s   5.476 ms/tok, peak 2360 MiB
-    model 4B BF16: /home/xl0/work/work/tm/exploring-edge-perf/.hf/hub/models--unsloth--Qwen3.5-4B-GGUF/snapshots/e87f176479d0855a907a41277aca2f8ee7a09523/Qwen3.5-4B-BF16.gguf
-    ^C
-    Traceback (most recent call last):
-      File "/home/xl0/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 1209, in communicate
-        stdout, stderr = self._communicate(input, endtime, timeout)
-                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-      File "/home/xl0/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 2115, in _communicate
-        ready = selector.select(timeout)
-                ^^^^^^^^^^^^^^^^^^^^^^^^
-      File "/home/xl0/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/selectors.py", line 415, in select
-        fd_event_list = self._selector.poll(timeout)
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    KeyboardInterrupt
-
-    During handling of the above exception, another exception occurred:
-
-    Traceback (most recent call last):
-      File "/home/xl0/work/work/tm/exploring-edge-perf/nbs/bench_llama_cpp.py", line 138, in <module>
-        if __name__ == "__main__": main()
-                                   ^^^^^^
-      File "/home/xl0/work/work/tm/exploring-edge-perf/nbs/bench_llama_cpp.py", line 133, in main
-        rows = bench(args, env, size, repo, quant, file, path)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-      File "/home/xl0/work/work/tm/exploring-edge-perf/nbs/bench_llama_cpp.py", line 104, in bench
-        out, err, base, peak = run(cmd, env, not args.no_vram_sample, args.vram_interval)
-                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-      File "/home/xl0/work/work/tm/exploring-edge-perf/nbs/bench_llama_cpp.py", line 94, in run
-        out, err = p.communicate(); stop = True
-                   ^^^^^^^^^^^^^^^
-      File "/home/xl0/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 1220, in communicate
-        self._wait(timeout=sigint_timeout)
-      File "/home/xl0/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/subprocess.py", line 2047, in _wait
-        time.sleep(delay)
-    KeyboardInterrupt
-
-| Size | GGUF quant |    Prompt eval |       Decode | GPU mem delta |
-|-----:|-----------:|---------------:|-------------:|--------------:|
-|   2B |       BF16 | 5,753.26 tok/s |  90.54 tok/s |      4.26 GiB |
-|   2B |       Q8_0 | 7,210.45 tok/s | 144.82 tok/s |      2.57 GiB |
-|   2B |       Q6_K | 6,545.64 tok/s | 152.77 tok/s |      2.16 GiB |
-|   2B |     Q4_K_M | 6,911.19 tok/s | 182.38 tok/s |      1.89 GiB |
-|      |            |                |              |               |
-|   4B |       BF16 | 2,444.61 tok/s |  42.87 tok/s |      8.63 GiB |
-|   4B |       Q8_0 | 3,059.20 tok/s |  70.12 tok/s |      4.92 GiB |
-|   4B |       Q6_K | 2,750.17 tok/s |  71.26 tok/s |      4.02 GiB |
-|   4B |     Q4_K_M | 2,916.93 tok/s |  89.81 tok/s |      3.29 GiB |
-|      |            |                |              |               |
-|   9B |       Q8_0 | 1,758.91 tok/s |  40.33 tok/s |      8.61 GiB |
-|   9B |       Q6_K | 1,726.94 tok/s |  39.62 tok/s |      6.92 GiB |
-|   9B |     Q4_K_M | 1,715.47 tok/s |  49.21 tok/s |      5.50 GiB |
+| Size | GGUF quant | Prompt processing |       Decode | GPU mem delta |
+|-----:|-----------:|------------------:|-------------:|--------------:|
+|   2B |       BF16 |    5,769.26 tok/s |  90.78 tok/s |      4.26 GiB |
+|   2B |       Q8_0 |    7,212.59 tok/s | 144.98 tok/s |      2.57 GiB |
+|   2B |       Q6_K |    6,562.57 tok/s | 153.98 tok/s |      2.16 GiB |
+|   2B |     Q4_K_M |    6,949.54 tok/s | 183.05 tok/s |      1.89 GiB |
+|      |            |                   |              |               |
+|   4B |       BF16 |    2,473.67 tok/s |  42.84 tok/s |      8.63 GiB |
+|   4B |       Q8_0 |    3,060.01 tok/s |  69.91 tok/s |      4.92 GiB |
+|   4B |       Q6_K |    2,724.35 tok/s |  71.61 tok/s |      4.02 GiB |
+|   4B |     Q4_K_M |    2,933.12 tok/s |  89.94 tok/s |      3.29 GiB |
+|      |            |                   |              |               |
+|   9B |       Q8_0 |    1,957.14 tok/s |  41.50 tok/s |      8.61 GiB |
+|   9B |       Q6_K |    1,728.09 tok/s |  34.15 tok/s |     11.20 GiB |
+|   9B |     Q4_K_M |    1,720.90 tok/s |  50.55 tok/s |      5.50 GiB |
