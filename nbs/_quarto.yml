@@ -6,17 +6,26 @@ format:
     theme: cosmo
     css: styles.css
     toc: true
-    keep-md: true
-  commonmark: default
+    toc-location: left
+    page-layout: full
 
 website:
-  twitter-card: true
+  twitter-card:
+      creator: "@xl0xl0xl0"
   open-graph: true
-  repo-actions: [issue]
+  # repo-actions: [issue]
   navbar:
     background: primary
     search: true
+    right:
+      - icon: github
+        href: "http://github.com/xl0/lovely-tensors"
+      - icon: twitter
+        href: "https://twitter.com/xl0xl0xl0"
+      - icon: mastodon
+        href: https://sigmoid.social/@xl0
   sidebar:
     style: floating
 
+default-image-extension: ""
 metadata-files: [nbdev.yml, sidebar.yml]
