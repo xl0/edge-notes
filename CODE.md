@@ -17,6 +17,8 @@ nbdev v3 static docs/report project estimating memory-bandwidth-bound LLM decode
 - `.gitignore`: Ignores local uv venv, HF/XDG/CUDA caches, `.deps/`, nbdev build dirs, package build outputs, bytecode, notebook checkpoints, and logs.
 - `LICENSE`: Apache-2.0.
 - `PLAN.md`: Current high-level plan/todo state.
+- `3D-photo-research.md`: Research notes for indoor photo/video reconstruction into Google-Maps-like navigable house environments. Covers Matterport-style pano graphs, photogrammetry/SLAM meshes, 3D Gaussian Splatting, hybrid product architecture, capture constraints, hard problems, datasets, inline acronym/concept definitions, and recommended staged approach. Includes open-source/research/commercial reference links.
+- `autonomous-drone-navigation-research.md`: Research notes for indoor autonomous drone mapping/capture. Covers onboard-vs-PC autonomy split, nav vs HQ data streams, coverage/capture ledger data model, frontier/NBV planning, candidate drone/software stacks, safety constraints, simulation options, staged build plan, end-to-end/learned navigation research, references, and beginner study list.
 - `AGENTS.md`: Local agent/project instructions.
 
 ## Commands

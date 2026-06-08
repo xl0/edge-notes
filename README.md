@@ -232,7 +232,8 @@ References:
 ## Local GPU llama.cpp GGUF benchmark
 
 I ran a local benchmark on my laptop; results roughly track the
-theoretical max TPS.
+theoretical max TPS at BF16, but dip down below 50% of theoretical max
+at lower quant levels.
 
 llama.cpp provides direct GGUF dtype/quant sweeps. Local build:
 llama.cpp commit `d749821`, CUDA backend, `llama-bench`, GPU
@@ -255,18 +256,76 @@ table. The script deletes that result file before writing fresh rows.
 Prompt processing is prompt-ingest throughput, not generation
 throughput; compare decode to decode.
 
+``` python
+!python bench_llama_cpp.py --profile matrix --prompt-tokens 512 --gen-tokens 256 --repetitions 3
+```
+
+    model 2B BF16: /home/xl0/work/work/tm/exploring-edge-perf/.hf/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-BF16.gguf
+    2B   BF16 prefill  5825.15 tok/s   0.172 ms/tok, peak 4788 MiB
+    2B   BF16 decode     90.84 tok/s  11.009 ms/tok, peak 4788 MiB
+    Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+    model 2B Q8_0: /home/xl0/work/work/tm/exploring-edge-perf/.hf/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q8_0.gguf
+    2B   Q8_0 prefill  7249.66 tok/s   0.138 ms/tok, peak 3058 MiB
+    2B   Q8_0 decode    145.45 tok/s   6.875 ms/tok, peak 3058 MiB
+    model 2B Q4_K_M: /home/xl0/work/work/tm/exploring-edge-perf/.hf/hub/models--unsloth--Qwen3.5-2B-GGUF/snapshots/f6d5376be1edb4d416d56da11e5397a961aca8ae/Qwen3.5-2B-Q4_K_M.gguf
+    2B Q4_K_M prefill  6995.39 tok/s   0.143 ms/tok, peak 2360 MiB
+    2B Q4_K_M decode    184.11 tok/s   5.432 ms/tok, peak 2360 MiB
+    model 4B BF16: /home/xl0/work/work/tm/exploring-edge-perf/.hf/hub/models--unsloth--Qwen3.5-4B-GGUF/snapshots/e87f176479d0855a907a41277aca2f8ee7a09523/Qwen3.5-4B-BF16.gguf
+    4B   BF16 prefill  2470.36 tok/s   0.405 ms/tok, peak 9270 MiB
+    4B   BF16 decode     42.92 tok/s  23.299 ms/tok, peak 9270 MiB
+    model 4B Q8_0: /home/xl0/work/work/tm/exploring-edge-perf/.hf/hub/models--unsloth--Qwen3.5-4B-GGUF/snapshots/e87f176479d0855a907a41277aca2f8ee7a09523/Qwen3.5-4B-Q8_0.gguf
+    4B   Q8_0 prefill  3078.04 tok/s   0.325 ms/tok, peak 5462 MiB
+    4B   Q8_0 decode     70.29 tok/s  14.227 ms/tok, peak 5462 MiB
+    model 4B Q4_K_M: /home/xl0/work/work/tm/exploring-edge-perf/.hf/hub/models--unsloth--Qwen3.5-4B-GGUF/snapshots/e87f176479d0855a907a41277aca2f8ee7a09523/Qwen3.5-4B-Q4_K_M.gguf
+    4B Q4_K_M prefill  2994.16 tok/s   0.334 ms/tok, peak 3800 MiB
+    4B Q4_K_M decode     91.70 tok/s  10.905 ms/tok, peak 3800 MiB
+    model 9B Q8_0: /home/xl0/work/work/tm/exploring-edge-perf/.hf/hub/models--unsloth--Qwen3.5-9B-GGUF/snapshots/3885219b6810b007914f3a7950a8d1b469d598a5/Qwen3.5-9B-Q8_0.gguf
+    9B   Q8_0 prefill  2011.91 tok/s   0.497 ms/tok, peak 9248 MiB
+    9B   Q8_0 decode     41.71 tok/s  23.973 ms/tok, peak 9248 MiB
+    model 9B Q4_K_M: /home/xl0/work/work/tm/exploring-edge-perf/.hf/hub/models--unsloth--Qwen3.5-9B-GGUF/snapshots/3885219b6810b007914f3a7950a8d1b469d598a5/Qwen3.5-9B-Q4_K_M.gguf
+    9B Q4_K_M prefill  1928.64 tok/s   0.519 ms/tok, peak 6064 MiB
+    9B Q4_K_M decode     57.01 tok/s  17.540 ms/tok, peak 6064 MiB
+
+``` python
+import json
+from pathlib import Path
+import pandas as pd
+from IPython.display import Markdown, display
+
+result_path = Path('llama_cpp_tps_results.jsonl')
+if not result_path.exists(): raise FileNotFoundError(f'missing {result_path}; run the benchmark cell above')
+
+rows = [json.loads(l) for l in result_path.read_text().splitlines() if l.strip()]
+df = pd.DataFrame(rows)
+size_order, quant_order = ['2B', '4B', '9B'], ['BF16', 'Q8_0', 'Q4_K_M']
+perf = df.groupby(['size', 'quant', 'phase'], as_index=False).agg(tok_s=('avg_ts', 'mean'))
+mem = df.groupby(['size', 'quant'], as_index=False).agg(gpu_mem_delta_gib=('delta_peak_vram_mib', lambda s: s.dropna().mean()/1024))
+out = perf.pivot(index=['size', 'quant'], columns='phase', values='tok_s').reset_index().merge(mem, on=['size', 'quant'])
+out['size'] = pd.Categorical(out['size'], size_order, ordered=True)
+out['quant'] = pd.Categorical(out['quant'], quant_order, ordered=True)
+out = out.sort_values(['size', 'quant'])
+
+lines = ['| Size | GGUF quant | Prompt processing | Decode | GPU mem delta |', '|---:|---:|---:|---:|---:|']
+first = True
+for size in size_order:
+    part = out[out['size'].astype(str).eq(size)]
+    if part.empty: continue
+    if not first: lines.append('|  |  |  |  |  |')
+    first = False
+    for _, r in part.iterrows():
+        lines.append(f"| {r['size']} | {r['quant']} | {r['prefill']:,.2f} tok/s | {r['decode']:,.2f} tok/s | {r['gpu_mem_delta_gib']:.2f} GiB |")
+display(Markdown('\n'.join(lines)))
+```
+
 | Size | GGUF quant | Prompt processing |       Decode | GPU mem delta |
 |-----:|-----------:|------------------:|-------------:|--------------:|
-|   2B |       BF16 |    5,769.26 tok/s |  90.78 tok/s |      4.26 GiB |
-|   2B |       Q8_0 |    7,212.59 tok/s | 144.98 tok/s |      2.57 GiB |
-|   2B |       Q6_K |    6,562.57 tok/s | 153.98 tok/s |      2.16 GiB |
-|   2B |     Q4_K_M |    6,949.54 tok/s | 183.05 tok/s |      1.89 GiB |
+|   2B |       BF16 |    5,825.15 tok/s |  90.84 tok/s |      4.26 GiB |
+|   2B |       Q8_0 |    7,249.66 tok/s | 145.45 tok/s |      2.57 GiB |
+|   2B |     Q4_K_M |    6,995.39 tok/s | 184.11 tok/s |      1.89 GiB |
 |      |            |                   |              |               |
-|   4B |       BF16 |    2,473.67 tok/s |  42.84 tok/s |      8.63 GiB |
-|   4B |       Q8_0 |    3,060.01 tok/s |  69.91 tok/s |      4.92 GiB |
-|   4B |       Q6_K |    2,724.35 tok/s |  71.61 tok/s |      4.02 GiB |
-|   4B |     Q4_K_M |    2,933.12 tok/s |  89.94 tok/s |      3.29 GiB |
+|   4B |       BF16 |    2,470.36 tok/s |  42.92 tok/s |      8.63 GiB |
+|   4B |       Q8_0 |    3,078.04 tok/s |  70.29 tok/s |      4.92 GiB |
+|   4B |     Q4_K_M |    2,994.16 tok/s |  91.70 tok/s |      3.29 GiB |
 |      |            |                   |              |               |
-|   9B |       Q8_0 |    1,957.14 tok/s |  41.50 tok/s |      8.61 GiB |
-|   9B |       Q6_K |    1,728.09 tok/s |  34.15 tok/s |     11.20 GiB |
-|   9B |     Q4_K_M |    1,720.90 tok/s |  50.55 tok/s |      5.50 GiB |
+|   9B |       Q8_0 |    2,011.91 tok/s |  41.71 tok/s |      8.61 GiB |
+|   9B |     Q4_K_M |    1,928.64 tok/s |  57.01 tok/s |      5.50 GiB |
