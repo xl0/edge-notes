@@ -2,3 +2,6 @@ website:
   sidebar:
     contents:
       - index.ipynb
+      - 01_edge_llm_tps.ipynb
+      - 02_3d_photo_reconstruction.ipynb
+      - 03_autonomous_drone_navigation.ipynb

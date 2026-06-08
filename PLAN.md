@@ -6,8 +6,7 @@
 - Use nbdev v3 only as static docs/README builder: notebooks/scripts in `nbs/`, config in `pyproject.toml`, no generated package.
 - Use plain Python script for llama.cpp GGUF dtype/quant matrix.
 - Keep large local deps/caches out of git.
-- Maintain `3D-photo-research.md` as living research notes for indoor photo/video reconstruction and navigation exploration.
-- Maintain `autonomous-drone-navigation-research.md` as living research notes for indoor autonomous drone mapping/capture exploration.
+- Keep each research project as its own numbered notebook under `nbs/`; `index.ipynb` is nbdev docs/README table of contents.
 
 ## Todo
 
@@ -19,6 +18,8 @@
 - [x] Convert repo to nbdev v3 static docs.
 - [x] Move benchmark harness back to plain script under `nbs/`.
 - [x] Update CODE.md.
-- [x] Add indoor 3D photo reconstruction research notes.
-- [x] Add indoor autonomous drone navigation/capture research notes.
+- [x] Add indoor 3D photo reconstruction research notebook.
+- [x] Add indoor autonomous drone navigation/capture research notebook.
+- [x] Move root research markdown notes into `nbs/` notebooks and sidebar.
+- [x] Rename research notebooks to `01_`, `02_`, `03_` scheme and make `index.ipynb` a TOC.
 - [ ] Optional: run Q5_K_M rows if more disk headroom is available.
