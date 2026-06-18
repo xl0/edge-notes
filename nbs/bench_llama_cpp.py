@@ -82,6 +82,9 @@ def run(cmd, env, sample_vram=True, interval=0.05):
             time.sleep(interval)
     th = threading.Thread(target=sampler, daemon=True) if sample_vram else None
     if th: th.start()
+
+    cmd_str = " ".join(cmd)
+    print(f"Running: '{cmd_str}'")
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
     out, err = p.communicate(); stop = True
     if th: th.join(timeout=1)
