@@ -6,3 +6,6 @@ website:
       - 02_3d_photo_reconstruction.ipynb
       - 03_autonomous_drone_navigation.ipynb
       - 04_ref_matrials.ipynb
+      - 06_nvidia_isaac_ecosystem.ipynb
+      - 07_voxl2_mini.ipynb
+      - 08_flight_compute_landscape.ipynb

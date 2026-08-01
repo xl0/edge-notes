@@ -8,3 +8,7 @@
   navigation](02_3d_photo_reconstruction.ipynb)
 - [Autonomous indoor drone navigation /
   capture](03_autonomous_drone_navigation.ipynb)
+- [NVIDIA Isaac ecosystem](06_nvidia_isaac_ecosystem.ipynb)
+- [ModalAI VOXL 2 Mini](07_voxl2_mini.ipynb)
+- [Flight compute and competing
+  ecosystems](08_flight_compute_landscape.ipynb)
