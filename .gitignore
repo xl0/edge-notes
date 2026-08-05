@@ -4,6 +4,7 @@
 .config/
 .cuda_cache/
 .deps/
+voxl/
 _docs/
 _proc/
 build/
@@ -14,3 +15,5 @@ __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
 *.log
+isaacsim/
+quaternion-lab/
