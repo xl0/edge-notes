@@ -7,3 +7,8 @@ website:
   description: "Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks"
   repo-branch: master
   repo-url: "https://github.com/xl0/exploring-edge-perf"
+
+format-links:
+  - html
+  - format: commonmark
+    text: Markdown

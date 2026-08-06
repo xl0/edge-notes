@@ -10,3 +10,5 @@
 - [ModalAI VOXL 2 Mini](07_voxl2_mini.ipynb)
 - [Flight compute and competing ecosystems](08_flight_compute_landscape.ipynb)
 - [ModalAI module reference](09_modalai_modules.ipynb)
+- [The Pixhawk ecosystem](10_pixhawk_ecosystem.ipynb)
+- [ROS, from zero](11_ros.ipynb)
