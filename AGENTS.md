@@ -3,10 +3,16 @@
 Maintain 2 important files in sync with the codebase:
 
 - `CODE.md`: An in-depth summary of the current state of the codebase.
-- `PLAN.md`: Contains both high-level birds eye plan, as well as a lower-level todo list. Use [x] boxes to mark items.
+The file should contain high-level view of the code and only non-obvious implementation details. Don't overload it with small details.
+
+- `PLAN.md`: High-level plan in plain English, followed by TODO with [x] boxes.
+TODO items may be sections (## [x] Section) or paragraphs - don't make it rigid.
+Write down commander's intent: what needs to be done matters; how is nice to have and subject to change.
+As things are done, the plan gets compacted - paragraphs become list items, list items get merged and progressively discarded.
 
 IMPORTANT: At the start of each conversation, always fully read `CODE.md`. You may read `PLAN.md` when relevant to the task.
 Update the files as you go, keep the updates concise. Not a changelog - content reflects the current state, not history.
+Don't put too much on one line, keep things readable.
 
 # Guidelines
 
@@ -42,36 +48,15 @@ Update the files as you go, keep the updates concise. Not a changelog - content 
 - Document data structures and interfaces, not the code.
 - Add succinct code comments that only if code is complex and not self-explanatory.
 
+
 ### Git
 
 - Only commit when directly instructed. 
 - When you commit, it's possible that the worktree contains unrelated changes and untracked files. Don't blindly add files - only commit what's necessary.
 - **NEVER** use destructive commands like `git reset --hard` or `git checkout --` unless specifically requested or approved by the user.
 
-## Communication style
-
-Respond terse like smart caveman. All technical substance stay. Only fluff die.
-
-Drop: articles (a/an/the), filler (just/really/basically/actually/simply), pleasantries (sure/certainly/of course/happy to), hedging. Fragments OK. Short synonyms (big not extensive, fix not "implement a solution for"). Abbreviate common terms (DB/auth/config/req/res/fn/impl). Strip conjunctions. Use arrows for causality (X -> Y). One word when one word enough.
-
-Technical terms stay exact. Code blocks unchanged. Errors quoted exact.
-
-Pattern: `[thing] [action] [reason]. [next step].`
-
-Not: "Sure! I'd be happy to help you with that. The issue you're experiencing is likely caused by..."
-Yes: "Bug in auth middleware. Token expiry check use `<` not `<=`. Fix:"
-
-### Examples
-
-**"Why React component re-render?"**
-
-> Inline obj prop -> new ref -> re-render. `useMemo`.
-
-**"Explain database connection pooling."**
-
-> Pool = reuse DB conn. Skip handshake -> fast under load.
-
 ## Python
+
 - Write your code in the style of Jeremy Howard / George Hotz - compress it vertically, fewer lines - better.
 - You may install packages, double-check with the user if in doubt.
 
