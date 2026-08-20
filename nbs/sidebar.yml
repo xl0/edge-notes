@@ -12,3 +12,6 @@ website:
       - 09_modalai_modules.ipynb
       - 10_pixhawk_ecosystem.ipynb
       - 11_ros.ipynb
+      - 12_vio_slam.ipynb
+      - 13_navigation_exploration.ipynb
+      - 14_platforms.ipynb
