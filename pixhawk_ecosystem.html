@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>The Pixhawk ecosystem – exploring-edge-perf</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-d63a2c9c8df14b07662b36303925c8cc.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="The Pixhawk ecosystem – exploring-edge-perf">
+<meta property="og:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta property="og:site_name" content="exploring-edge-perf">
+<meta name="twitter:title" content="The Pixhawk ecosystem – exploring-edge-perf">
+<meta name="twitter:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta name="twitter:creator" content="@xl0xl0xl0">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">exploring-edge-perf</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="http://github.com/xl0/edge-notes"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/xl0xl0xl0"> <i class="bi bi-twitter" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./pixhawk_ecosystem.html">The Pixhawk ecosystem</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Research notebooks</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./edge_llm_tps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Theoretical LLM TPS on IQ-9075, Jetson, and NVIDIA GPUs</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./3d_photo_reconstruction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">3D photo reconstruction / indoor navigation research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autonomous_drone_navigation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Autonomous indoor drone navigation / capture research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04_ref_matrials.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">04_ref_matrials.html</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./nvidia_isaac_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NVIDIA Isaac ecosystem research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./voxl2_mini.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI VOXL 2 Mini research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./flight_compute_landscape.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Flight compute and competing ecosystems</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modalai_modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI module reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pixhawk_ecosystem.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">The Pixhawk ecosystem</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ros.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ROS, from zero</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./vio_slam.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIO and SLAM</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./navigation_exploration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Navigation and exploration</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./platforms.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Drone platforms</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#who-runs-it" id="toc-who-runs-it" class="nav-link active" data-scroll-target="#who-runs-it">Who runs it</a></li>
+  <li><a href="#the-standards-themselves" id="toc-the-standards-themselves" class="nav-link" data-scroll-target="#the-standards-themselves">The standards themselves</a></li>
+  <li><a href="#generations" id="toc-generations" class="nav-link" data-scroll-target="#generations">Generations</a></li>
+  <li><a href="#the-hardware-landscape" id="toc-the-hardware-landscape" class="nav-link" data-scroll-target="#the-hardware-landscape">The hardware landscape</a></li>
+  <li><a href="#buses-and-peripherals" id="toc-buses-and-peripherals" class="nav-link" data-scroll-target="#buses-and-peripherals">Buses and peripherals</a></li>
+  <li><a href="#the-two-firmwares" id="toc-the-two-firmwares" class="nav-link" data-scroll-target="#the-two-firmwares">The two firmwares</a></li>
+  <li><a href="#talking-to-a-pixhawk-from-a-computer" id="toc-talking-to-a-pixhawk-from-a-computer" class="nav-link" data-scroll-target="#talking-to-a-pixhawk-from-a-computer">Talking to a Pixhawk from a computer</a></li>
+  <li><a href="#indoor-and-gps-denied-flight" id="toc-indoor-and-gps-denied-flight" class="nav-link" data-scroll-target="#indoor-and-gps-denied-flight">Indoor and GPS-denied flight</a></li>
+  <li><a href="#strengths-and-weaknesses-plainly" id="toc-strengths-and-weaknesses-plainly" class="nav-link" data-scroll-target="#strengths-and-weaknesses-plainly">Strengths and weaknesses, plainly</a></li>
+  <li><a href="#relevance-to-indoor-autonomous-capture" id="toc-relevance-to-indoor-autonomous-capture" class="nav-link" data-scroll-target="#relevance-to-indoor-autonomous-capture">Relevance to indoor autonomous capture</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content column-page-right" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">The Pixhawk ecosystem</h1>
+</div>
+
+
+
+<div class="quarto-title-meta column-page-right">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<p>The Pixhawk world is the default answer to “what flies the aircraft” for anyone not buying a DJI or a Skydio. It is worth understanding as a whole, because the name covers four different things that are routinely conflated:</p>
+<ul>
+<li>an <strong>open hardware standard</strong> — a set of published documents describing connectors, board interfaces and reference designs;</li>
+<li>a <strong>board family</strong> — the FMUv2 through FMUv6X-RT generations built to those documents by a dozen manufacturers;</li>
+<li>a <strong>trademark</strong> — use of the Pixhawk name is conditional on compliance;</li>
+<li>loosely, the <strong>firmware ecosystem</strong> around it, which is really two independent projects (PX4 and ArduPilot) that happen to run on the same boards.</li>
+</ul>
+<p>Core take: <strong>Pixhawk standardizes the flight controller, and deliberately nothing above it.</strong> It gives a stabilized, sensor-redundant, failsafe-managed aircraft with a well-specified command interface, and stops there. Everything that makes an aircraft autonomous in the interesting sense — state estimation from cameras, mapping, deciding where to fly — lives on a companion computer and is not standardized at all.</p>
+<p>Terms: FMU = flight management unit, the autopilot board proper.</p>
+<section id="who-runs-it" class="level2">
+<h2 class="anchored" data-anchor-id="who-runs-it">Who runs it</h2>
+<p>The standards are produced by the <strong>Pixhawk Special Interest Group</strong>, convened by the <a href="https://dronecode.org/">Dronecode Foundation</a>, which is a Linux Foundation collaborative project. Dronecode is also the legal home of PX4, MAVLink, QGroundControl and MAVSDK, and holds those trademarks.</p>
+<p>Two governance facts shape the ecosystem more than any technical decision:</p>
+<ul>
+<li><strong>ArduPilot is not part of it.</strong> ArduPilot separated from Dronecode and is run by its own board, under GPLv3, while PX4 is BSD 3-clause under Dronecode. The same board therefore has two firmware options with different licences, different release cadences and different feature sets — and no shared roadmap.</li>
+<li><strong>Contribution is concentrated.</strong> Dronecode’s own 2025 review puts Auterion at roughly 25% of PX4 contributions, the largest single organization, with independent contributors at ~28%. Auterion also sells a closed commercial distribution built on PX4. That is a normal open-core arrangement, but it does mean the largest voice in the reference implementation is also a vendor competing in the market the standard serves.</li>
+</ul>
+<p>The practical read: the hardware standard is genuinely open and multi-vendor, the firmware is open but strongly steered, and the two firmwares that run on the hardware answer to different masters.</p>
+</section>
+<section id="the-standards-themselves" class="level2">
+<h2 class="anchored" data-anchor-id="the-standards-themselves">The standards themselves</h2>
+<p>The <a href="https://github.com/pixhawk/Pixhawk-Standards">Pixhawk Standards repository</a> is the authoritative list. Documents are numbered DS-0xx; DS-001 to DS-008 are reserved and unused.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Document</th>
+<th>Covers</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>DS-009</td>
+<td>Connector standard</td>
+<td>active</td>
+</tr>
+<tr class="even">
+<td>DS-010</td>
+<td>Pixhawk Autopilot Bus (PAB)</td>
+<td>active</td>
+</tr>
+<tr class="odd">
+<td>DS-011</td>
+<td>Autopilot v5X</td>
+<td>active</td>
+</tr>
+<tr class="even">
+<td>DS-012</td>
+<td>Autopilot v6X</td>
+<td>active</td>
+</tr>
+<tr class="odd">
+<td>DS-013</td>
+<td>Smart battery</td>
+<td><strong>deprecated</strong></td>
+</tr>
+<tr class="even">
+<td>DS-014</td>
+<td>Payload bus</td>
+<td>active</td>
+</tr>
+<tr class="odd">
+<td>DS-015</td>
+<td>(superseded by the CAN drone SIG)</td>
+<td><strong>deprecated</strong></td>
+</tr>
+<tr class="even">
+<td>DS-016</td>
+<td>Autopilot v6U</td>
+<td><strong>draft</strong></td>
+</tr>
+<tr class="odd">
+<td>DS-017</td>
+<td>Radio interface</td>
+<td>active</td>
+</tr>
+<tr class="even">
+<td>DS-018</td>
+<td>Autopilot v6C</td>
+<td>active</td>
+</tr>
+<tr class="odd">
+<td>DS-019</td>
+<td>Versions and revisions</td>
+<td>active</td>
+</tr>
+<tr class="even">
+<td>DS-020</td>
+<td>Autopilot v6X-RT</td>
+<td>active</td>
+</tr>
+</tbody>
+</table>
+<p>Three of these carry nearly all the practical weight:</p>
+<ul>
+<li><strong>DS-009</strong> fixes JST-GH connector pinouts. This is why a GNSS module, a telemetry radio or an airspeed sensor from one vendor plugs into another vendor’s board without an adapter. Unglamorous and the single most valuable document in the set.</li>
+<li><strong>DS-010, the Pixhawk Autopilot Bus</strong>, splits the autopilot into an <strong>FMU module</strong> (microcontroller, inertial measurement units, barometer, magnetometer) and a <strong>carrier board</strong> (connectors, power, motor outputs, whatever else the integrator wants). A PAB-compliant FMU drops into any PAB-compliant carrier.</li>
+<li><strong>DS-012 and friends</strong> prescribe the sensor complement per generation, which is what lets PX4 and ArduPilot ship a single firmware target that works across every vendor’s implementation of that generation.</li>
+</ul>
+<p>DS-010 is the one with strategic consequences: it means a custom vehicle can have a fully custom carrier board — the exact connectors, power tree and form factor wanted — while the certified, sensor-calibrated, firmware-supported part is bought off the shelf. It is the reason the Jetson carrier market converged on a PAB socket rather than each vendor inventing an autopilot.</p>
+</section>
+<section id="generations" class="level2">
+<h2 class="anchored" data-anchor-id="generations">Generations</h2>
+<p>Board generations are named FMUv<em>N</em>. The number tracks the reference design, not the vendor.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Generation</th>
+<th>Processor</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>FMUv2 / v3</td>
+<td>STM32F4</td>
+<td>2013-2016 era, 1 MB flash limit, legacy</td>
+</tr>
+<tr class="even">
+<td>FMUv4</td>
+<td>STM32F4</td>
+<td>Pixracer class, small and light</td>
+</tr>
+<tr class="odd">
+<td>FMUv5</td>
+<td>STM32F7</td>
+<td>the volume workhorse for years</td>
+</tr>
+<tr class="even">
+<td>FMUv5X</td>
+<td>STM32F7</td>
+<td>first PAB split of FMU and carrier</td>
+</tr>
+<tr class="odd">
+<td>FMUv6C</td>
+<td>STM32H7</td>
+<td>cost-reduced, no Ethernet</td>
+</tr>
+<tr class="even">
+<td>FMUv6X</td>
+<td>STM32H7</td>
+<td>the current mainstream: triple redundant IMU, Ethernet</td>
+</tr>
+<tr class="odd">
+<td>FMUv6X-RT</td>
+<td>NXP i.MX RT1176</td>
+<td>same standard, non-ST processor</td>
+</tr>
+<tr class="even">
+<td>FMUv6U</td>
+<td>-</td>
+<td><strong>draft</strong>, not shipping</td>
+</tr>
+</tbody>
+</table>
+<p>Two things worth extracting from that table:</p>
+<ul>
+<li><strong>FMUv6X is the current default.</strong> Triple redundant, vibration-isolated inertial measurement units, separate power domains, Ethernet, and support in both firmwares. If a project does not have a specific reason to choose otherwise, this is the choice.</li>
+<li><strong>FMUv6X-RT proves the standard works.</strong> NXP built the same interface around a completely different processor family, and firmware support followed. A standard that survives a processor-vendor change is a real standard.</li>
+</ul>
+<p>No FMUv7 has been announced. The visible activity is the v6U draft and refinement inside the v6 family, which suggests the generation has several years left.</p>
+<p>Note the naming trap: <strong>“Pixhawk 6X” is a Holybro product, “FMUv6X” is the standard it implements.</strong> CUAV, ARK, RaccoonLab and NXP all build FMUv6X-class boards under their own names. PX4’s documentation splits boards into <em>Pixhawk standard</em> (fully compliant, trademark-licensed, tested by the project) and <em>manufacturer supported</em> (maintained by the vendor), and the distinction is worth checking before committing to a board.</p>
+</section>
+<section id="the-hardware-landscape" class="level2">
+<h2 class="anchored" data-anchor-id="the-hardware-landscape">The hardware landscape</h2>
+<p>Prices are July 2026 (see <a href="./flight_compute_landscape.html">notebook 08</a> for the wider compute comparison and the caveats).</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Board</th>
+<th>Generation</th>
+<th>Vendor</th>
+<th>Price</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://holybro.com/products/pixhawk-6x">Pixhawk 6X</a></td>
+<td>FMUv6X</td>
+<td>Holybro</td>
+<td>$166.99</td>
+<td>the volume default</td>
+</tr>
+<tr class="even">
+<td>Pixhawk 6X Pro</td>
+<td>FMUv6X</td>
+<td>Holybro</td>
+<td>-</td>
+<td>higher-spec variant</td>
+</tr>
+<tr class="odd">
+<td><a href="https://holybro.com/products/pixhawk-6c-mini">Pixhawk 6C mini</a></td>
+<td>FMUv6C</td>
+<td>Holybro</td>
+<td>from $130.99</td>
+<td>no Ethernet</td>
+</tr>
+<tr class="even">
+<td><a href="https://arkelectron.com/product/arkv6x/">ARKV6X</a></td>
+<td>FMUv6X</td>
+<td>ARK</td>
+<td>$400.00</td>
+<td>5 g, US-built</td>
+</tr>
+<tr class="odd">
+<td>Pixhawk V6X</td>
+<td>FMUv6X</td>
+<td>CUAV</td>
+<td>-</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>FMUv6X</td>
+<td>FMUv6X</td>
+<td>RaccoonLab</td>
+<td>-</td>
+<td>CAN-focused vendor</td>
+</tr>
+<tr class="odd">
+<td><a href="https://www.digikey.com/en/products/detail/nxp-usa-inc/MR-VMU-RT1176/26220861">MR-VMU-RT1176</a></td>
+<td>FMUv6X-RT</td>
+<td>NXP</td>
+<td>$392.70</td>
+<td>13-week lead</td>
+</tr>
+<tr class="even">
+<td><a href="https://irlock.com/products/cube-orange-plus-standard-set">Cube Orange+</a></td>
+<td>CubePilot</td>
+<td>Hex/ProfiCNC</td>
+<td>$277</td>
+<td><strong>not PAB</strong></td>
+</tr>
+<tr class="odd">
+<td><a href="https://store.3dr.com/pixracer-pro/">Pixracer Pro</a></td>
+<td>FMUv5-class</td>
+<td>mRo</td>
+<td>$349.90</td>
+<td>8.9 g</td>
+</tr>
+</tbody>
+</table>
+<p>The price spread on functionally equivalent hardware — $167 to $400 for the same generation — is assembly location and supply-chain provenance rather than capability.</p>
+<p><strong>CubePilot is the notable defector.</strong> The Cube line is widely deployed and well regarded, is the reference platform for much of the ArduPilot world, and uses its own carrier interface rather than PAB. Choosing a Cube means choosing the Cube carrier ecosystem too.</p>
+</section>
+<section id="buses-and-peripherals" class="level2">
+<h2 class="anchored" data-anchor-id="buses-and-peripherals">Buses and peripherals</h2>
+<p>What actually connects to an autopilot, and which of it is standardized:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Interface</th>
+<th>Used for</th>
+<th>Standardization</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>JST-GH serial / I2C</td>
+<td>GNSS, telemetry radio, airspeed, rangefinder</td>
+<td>DS-009, solid</td>
+</tr>
+<tr class="even">
+<td>CAN (DroneCAN)</td>
+<td>ESCs, GNSS, power, servos — bus topology, less wiring</td>
+<td>de facto</td>
+</tr>
+<tr class="odd">
+<td>PWM / DShot</td>
+<td>direct motor drive</td>
+<td>universal, DShot now bidirectional</td>
+</tr>
+<tr class="even">
+<td>RC input</td>
+<td>SBUS, CRSF, ELRS receivers</td>
+<td>de facto</td>
+</tr>
+<tr class="odd">
+<td>Ethernet</td>
+<td>companion computer link on v6X-class</td>
+<td>DS-012</td>
+</tr>
+<tr class="even">
+<td>USB</td>
+<td>configuration, ground station, some companion links</td>
+<td>universal</td>
+</tr>
+<tr class="odd">
+<td>Payload bus</td>
+<td>gimbals, cameras, sensors</td>
+<td>DS-014, thinly adopted</td>
+</tr>
+</tbody>
+</table>
+<p>Two of these deserve comment.</p>
+<p><strong>CAN is a fork story.</strong> The original UAVCAN split in 2022: v0 was renamed <strong>DroneCAN</strong> and v1 became <strong>Cyphal</strong>. Both PX4 and ArduPilot use DroneCAN as the practical peripheral bus; Cyphal is the technically better-designed successor, with support that is real but not the default path. Anyone buying CAN peripherals should assume DroneCAN unless proven otherwise, and note that the newer protocol has been “the future” for four years.</p>
+<p><strong>Bidirectional DShot arrived in PX4 v1.16</strong>, sponsored by ARK. It reads motor RPM back over the same wire used to command throttle. This is a genuinely useful capability for a project that cares about vibration, propeller state or motor health, and it removes a reason to run separate telemetry-capable ESCs.</p>
+</section>
+<section id="the-two-firmwares" class="level2">
+<h2 class="anchored" data-anchor-id="the-two-firmwares">The two firmwares</h2>
+<p>The same board runs either. They are not interchangeable in practice.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>PX4</th>
+<th>ArduPilot</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Licence</td>
+<td>BSD 3-clause</td>
+<td>GPLv3</td>
+</tr>
+<tr class="even">
+<td>Governance</td>
+<td>Dronecode / Linux Foundation</td>
+<td>independent board</td>
+</tr>
+<tr class="odd">
+<td>Latest stable</td>
+<td>v1.17.0, May 2026</td>
+<td>4.7.0, July 2026</td>
+</tr>
+<tr class="even">
+<td>Architecture</td>
+<td>modular, uORB message bus, NuttX</td>
+<td>monolithic, HAL abstraction</td>
+</tr>
+<tr class="odd">
+<td>ROS 2 story</td>
+<td>native — uXRCE-DDS, <code>px4_ros2</code> library</td>
+<td>MAVLink bridge, DDS support newer</td>
+</tr>
+<tr class="even">
+<td>Built-in path planning</td>
+<td>no</td>
+<td>yes — BendyRuler, Dijkstra</td>
+</tr>
+<tr class="odd">
+<td>Typical culture</td>
+<td>research, OEM products, ROS</td>
+<td>hobby-to-commercial, deep configurability</td>
+</tr>
+</tbody>
+</table>
+<p>The licence difference is the one that reaches a product decision: BSD lets a company ship modified PX4 without publishing changes, GPLv3 does not. That single fact explains most of the commercial gravitation toward PX4 and most of the feature depth in ArduPilot.</p>
+<p>For indoor autonomy specifically the interesting asymmetries are:</p>
+<ul>
+<li><strong>ArduPilot has object avoidance in the flight controller.</strong> BendyRuler is a local planner, Dijkstra plans around known fences, and the two compose. It is crude compared to a proper mapping planner, but it exists, ships, and runs without a companion computer.</li>
+<li><strong>PX4 has the better companion-computer interface.</strong> Collision prevention stops the vehicle before an obstacle but does not route around it; the routing is expected to come from outside.</li>
+</ul>
+<p>Which is to say the two projects drew the autonomy boundary in different places. PX4 assumes a companion computer will do the thinking; ArduPilot assumes it may not be there.</p>
+</section>
+<section id="talking-to-a-pixhawk-from-a-computer" class="level2">
+<h2 class="anchored" data-anchor-id="talking-to-a-pixhawk-from-a-computer">Talking to a Pixhawk from a computer</h2>
+<p>Three generations of interface coexist, and picking the right one matters more than the board choice.</p>
+<p><strong>MAVLink</strong> is the lingua franca — a compact message protocol over serial, UDP or TCP, spoken by every ground station and both firmwares. <code>MAVSDK</code> (C++, Python) and <code>MAVROS</code> (ROS 1/2 bridge) wrap it. It is universal, well documented, and shows its age: request-response semantics, limited rates, and a message set that grew by accretion.</p>
+<p><strong>uXRCE-DDS</strong> is the modern PX4 path. Micro XRCE-DDS (“eXtremely Resource Constrained Environment” DDS) runs a thin client on the flight controller talking to an agent on the companion computer, which bridges into the data distribution service middleware ROS 2 is built on. The effect is that PX4’s internal uORB topics appear directly as ROS 2 topics — <code>/fmu/out/*</code> and <code>/fmu/in/*</code> — with no translation layer. It replaced the older micro-RTPS bridge in v1.14.</p>
+<p><strong>The <a href="https://docs.px4.io/main/en/ros2/px4_ros2_interface_lib">PX4 ROS 2 Interface Library</a></strong> is the newest layer and the most consequential for autonomy work. It provides:</p>
+<ul>
+<li>a <strong>control interface</strong> for writing flight modes <em>in ROS 2</em> that register themselves dynamically with PX4, appear to a ground station as native modes, and fall back to the built-in mode if the external one fails;</li>
+<li><strong>mode executors</strong> — a state machine that can sequence modes, e.g.&nbsp;takeoff, then a custom capture mode, then return-to-launch;</li>
+<li>a <strong>navigation interface</strong> for feeding external position estimates, i.e.&nbsp;the supported way to plug a visual-inertial odometry system into the estimator;</li>
+<li>setpoint types from smooth position-and-heading goto down to direct actuator commands.</li>
+</ul>
+<p>This is the correct attachment point for an exploration or capture policy, and it is a much better one than the traditional approach of streaming offboard setpoints and hoping the failsafe logic agrees. Minimum PX4 v1.15, with real improvements in v1.17; parts are still marked experimental, which is worth weighting against the alternative of the older offboard mode.</p>
+</section>
+<section id="indoor-and-gps-denied-flight" class="level2">
+<h2 class="anchored" data-anchor-id="indoor-and-gps-denied-flight">Indoor and GPS-denied flight</h2>
+<p>The estimator side is solved and unglamorous. PX4’s <strong>EKF2</strong> accepts external vision pose and odometry, and will fuse it as the primary position source with no satellite fix; ArduPilot has the equivalent through <code>VISION_POSITION_ESTIMATE</code> and its EKF3. Both are well-trodden: motion-capture flight in a lab is a standard demo, and a visual-inertial odometry source is the same interface with a different producer.</p>
+<p>What has to come from outside, in both firmwares:</p>
+<ul>
+<li><strong>the odometry itself</strong> — no Pixhawk-class board has the compute or the camera interfaces to run visual-inertial odometry, so this is a companion-computer job;</li>
+<li><strong>the map</strong> — no volumetric or occupancy representation exists in either firmware;</li>
+<li><strong>the goal</strong> — nothing decides where to fly.</li>
+</ul>
+<p>The gap between “the interfaces exist” and “there is a working stack” is real, and it is visible in the state of the reference material:</p>
+<ul>
+<li><strong>PX4-Avoidance is archived.</strong> The project’s own obstacle-avoidance companion stack is no longer maintained.</li>
+<li><strong>The PX4 Vision Autonomy Development Kit is discontinued.</strong> The kit the documentation still recommends — a quadcopter with a Pixhawk 6C, an UP Core companion computer and a Structure Core depth camera, $1,889.99 for the v1.5 — is not orderable, and the v1 is sold out.</li>
+<li><strong>The recommended depth sensors keep disappearing.</strong> PX4’s own vision docs cited the Intel RealSense T265, which was discontinued; the surviving RealSense depth cameras are intermittently out of stock.</li>
+</ul>
+<p>So the honest position is that Pixhawk offers a <strong>well-specified socket for indoor autonomy with nothing plugged into it</strong>. That is not a criticism of the standard — it is exactly the boundary the project drew — but it does mean an indoor autonomous vehicle built on Pixhawk is an integration project on the companion side, with the flight-control half already solved.</p>
+</section>
+<section id="strengths-and-weaknesses-plainly" class="level2">
+<h2 class="anchored" data-anchor-id="strengths-and-weaknesses-plainly">Strengths and weaknesses, plainly</h2>
+<p>Strengths:</p>
+<ul>
+<li><strong>Genuine multi-vendor hardware.</strong> A board can be replaced with another vendor’s without redesigning the harness or the firmware target. Very little else in robotics offers this.</li>
+<li><strong>Two independent firmware implementations</strong> of the same interface, which is the strongest possible evidence that the standard is real.</li>
+<li><strong>Failsafe maturity.</strong> Battery, RC loss, geofence, estimator divergence, landing detection — a decade of accumulated flight-safety logic that would be extremely expensive to reproduce and dangerous to skip.</li>
+<li><strong>Cheap.</strong> A capable current-generation flight controller is $130-400, an order of magnitude under integrated compute-plus-autopilot boards.</li>
+<li><strong>The interface to a companion computer is now good</strong>, which was not true three years ago.</li>
+</ul>
+<p>Weaknesses:</p>
+<ul>
+<li><strong>The standard covers the autopilot only.</strong> Everything above it — perception, mapping, planning — is unstandardized, and the reference implementations of that layer are archived or discontinued.</li>
+<li><strong>Compliance is a spectrum.</strong> Vendors advertise “Pixhawk compatible” with varying fidelity; PX4’s <em>standard</em> versus <em>manufacturer supported</em> distinction exists precisely because of this.</li>
+<li><strong>Two firmwares means two ecosystems.</strong> Documentation, parameter names, tuning knowledge and community answers do not transfer, and choosing wrongly early is expensive.</li>
+<li><strong>Peripheral protocol drift.</strong> DroneCAN versus Cyphal has been unresolved for four years.</li>
+<li><strong>Integration labour is the real cost.</strong> The board is cheap; the airframe, power, sensor calibration, tuning and safety validation are not.</li>
+</ul>
+</section>
+<section id="relevance-to-indoor-autonomous-capture" class="level2">
+<h2 class="anchored" data-anchor-id="relevance-to-indoor-autonomous-capture">Relevance to indoor autonomous capture</h2>
+<p>Reading the ecosystem against a project that wants a drone to fly itself around a building and take usable photographs:</p>
+<ul>
+<li><strong>The flight-control problem is bought, not built.</strong> Stabilization, motor control, failsafes, battery management, external-position fusion and a documented command interface all come free. Attempting any of it directly is a waste of effort.</li>
+<li><strong>The natural architecture is a split stack</strong>: a Pixhawk-class flight controller plus a Linux companion computer over Ethernet, uXRCE-DDS between them, ROS 2 on top. This buys a current userland, current tooling, and a flight controller replaceable in a week — against the alternative of an integrated board like the VOXL, which trades that flexibility for ~150 g and a pre-integrated autonomy stack.</li>
+<li><strong>The <code>px4_ros2</code> control interface is where a capture policy attaches</strong>, as a registered custom mode with a mode executor sequencing takeoff, exploration and return. This is a materially better contract than streaming offboard setpoints, because the failsafe system understands it.</li>
+<li><strong>The navigation interface is where odometry attaches</strong>, whether that comes from a real visual-inertial system or from a simulator. This matters for simulation work: PX4 does not distinguish, so the same planner code drives software-in-the-loop, hardware-in-the-loop and a real vehicle.</li>
+<li><strong>Nothing in the ecosystem competes with an exploration policy.</strong> ArduPilot’s BendyRuler is a local avoider, PX4’s collision prevention is a brake. Neither chooses viewpoints, tracks coverage or scores image quality.</li>
+</ul>
+<p>Where it argues against Pixhawk: a Pixhawk plus a companion computer is a ~280-340 g, several-box assembly against an 11 g integrated board that already ships odometry, mapping and avoidance. For a bench and a research schedule the split stack wins on iteration speed; for a small airframe or a product it does not.</p>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<p>Standards and governance:</p>
+<ul>
+<li><a href="https://github.com/pixhawk/Pixhawk-Standards">Pixhawk Standards repository</a></li>
+<li><a href="https://pixhawk.org/standards/">Pixhawk project site</a></li>
+<li><a href="https://dronecode.org/">Dronecode Foundation</a></li>
+</ul>
+<p>Hardware:</p>
+<ul>
+<li><a href="https://docs.px4.io/main/en/flight_controller/autopilot_pixhawk_standard">PX4: Pixhawk standard autopilots</a></li>
+<li><a href="https://docs.px4.io/main/en/hardware/reference_design.html">PX4: reference flight controller design</a></li>
+</ul>
+<p>Firmware and interfaces:</p>
+<ul>
+<li><a href="https://docs.px4.io/main/en/releases/1.17">PX4 v1.17 release notes</a></li>
+<li><a href="https://docs.px4.io/main/en/releases/1.16">PX4 v1.16 release notes</a></li>
+<li><a href="https://github.com/ArduPilot/ardupilot/releases">ArduPilot releases</a></li>
+<li><a href="https://docs.px4.io/main/en/ros2/px4_ros2_interface_lib">PX4 ROS 2 Interface Library</a></li>
+<li><a href="https://docs.px4.io/main/en/ros2/px4_ros2_control_interface">PX4 ROS 2 Control Interface</a></li>
+<li><a href="https://docs.px4.io/main/en/can/">PX4 CAN: DroneCAN and Cyphal</a></li>
+<li><a href="https://dronecan.github.io/">DroneCAN</a></li>
+</ul>
+<p>Autonomy:</p>
+<ul>
+<li><a href="https://docs.px4.io/main/en/computer_vision/">PX4 computer vision</a></li>
+<li><a href="https://ardupilot.org/copter/docs/common-object-avoidance-landing-page.html">ArduPilot object avoidance</a></li>
+<li><a href="https://ardupilot.org/copter/docs/common-oa-dijkstrabendyruler.html">ArduPilot Dijkstra with BendyRuler</a></li>
+<li><a href="https://docs.px4.io/main/en/complete_vehicles_mc/px4_vision_kit">PX4 Vision Autonomy Development Kit</a></li>
+</ul>
+<p>Figures and availability date from 2026-08-05.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/xl0\.github\.io\/exploring-edge-perf");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>VIO and SLAM – exploring-edge-perf</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-d63a2c9c8df14b07662b36303925c8cc.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="VIO and SLAM – exploring-edge-perf">
+<meta property="og:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta property="og:site_name" content="exploring-edge-perf">
+<meta name="twitter:title" content="VIO and SLAM – exploring-edge-perf">
+<meta name="twitter:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta name="twitter:creator" content="@xl0xl0xl0">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">exploring-edge-perf</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="http://github.com/xl0/edge-notes"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/xl0xl0xl0"> <i class="bi bi-twitter" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./vio_slam.html">VIO and SLAM</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Research notebooks</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./edge_llm_tps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Theoretical LLM TPS on IQ-9075, Jetson, and NVIDIA GPUs</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./3d_photo_reconstruction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">3D photo reconstruction / indoor navigation research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autonomous_drone_navigation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Autonomous indoor drone navigation / capture research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04_ref_matrials.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">04_ref_matrials.html</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./nvidia_isaac_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NVIDIA Isaac ecosystem research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./voxl2_mini.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI VOXL 2 Mini research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./flight_compute_landscape.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Flight compute and competing ecosystems</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modalai_modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI module reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pixhawk_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Pixhawk ecosystem</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ros.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ROS, from zero</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./vio_slam.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">VIO and SLAM</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./navigation_exploration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Navigation and exploration</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./platforms.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Drone platforms</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#the-estimation-problem" id="toc-the-estimation-problem" class="nav-link active" data-scroll-target="#the-estimation-problem">The estimation problem</a></li>
+  <li><a href="#vio-why-a-camera-plus-an-imu" id="toc-vio-why-a-camera-plus-an-imu" class="nav-link" data-scroll-target="#vio-why-a-camera-plus-an-imu">VIO: why a camera plus an IMU</a></li>
+  <li><a href="#anatomy-of-a-vio-pipeline" id="toc-anatomy-of-a-vio-pipeline" class="nav-link" data-scroll-target="#anatomy-of-a-vio-pipeline">Anatomy of a VIO pipeline</a></li>
+  <li><a href="#what-the-hardware-must-provide" id="toc-what-the-hardware-must-provide" class="nav-link" data-scroll-target="#what-the-hardware-must-provide">What the hardware must provide</a></li>
+  <li><a href="#slam-odometry-plus-a-map-plus-recognition" id="toc-slam-odometry-plus-a-map-plus-recognition" class="nav-link" data-scroll-target="#slam-odometry-plus-a-map-plus-recognition">SLAM: odometry plus a map plus recognition</a></li>
+  <li><a href="#the-taxonomy" id="toc-the-taxonomy" class="nav-link" data-scroll-target="#the-taxonomy">The taxonomy</a></li>
+  <li><a href="#inputs-images-depth-maps-point-clouds" id="toc-inputs-images-depth-maps-point-clouds" class="nav-link" data-scroll-target="#inputs-images-depth-maps-point-clouds">Inputs: images, depth maps, point clouds</a></li>
+  <li><a href="#dense-mapping-the-other-half-of-the-stack" id="toc-dense-mapping-the-other-half-of-the-stack" class="nav-link" data-scroll-target="#dense-mapping-the-other-half-of-the-stack">Dense mapping: the other half of the stack</a></li>
+  <li><a href="#where-the-compute-lives-cpu-vs-gpunpudsp" id="toc-where-the-compute-lives-cpu-vs-gpunpudsp" class="nav-link" data-scroll-target="#where-the-compute-lives-cpu-vs-gpunpudsp">Where the compute lives: CPU vs GPU/NPU/DSP</a></li>
+  <li><a href="#systems-worth-knowing-by-name" id="toc-systems-worth-knowing-by-name" class="nav-link" data-scroll-target="#systems-worth-knowing-by-name">Systems worth knowing by name</a></li>
+  <li><a href="#integration-with-the-flight-stack" id="toc-integration-with-the-flight-stack" class="nav-link" data-scroll-target="#integration-with-the-flight-stack">Integration with the flight stack</a></li>
+  <li><a href="#failure-modes" id="toc-failure-modes" class="nav-link" data-scroll-target="#failure-modes">Failure modes</a></li>
+  <li><a href="#evaluating-an-estimator" id="toc-evaluating-an-estimator" class="nav-link" data-scroll-target="#evaluating-an-estimator">Evaluating an estimator</a></li>
+  <li><a href="#relation-to-sfm-and-photogrammetry" id="toc-relation-to-sfm-and-photogrammetry" class="nav-link" data-scroll-target="#relation-to-sfm-and-photogrammetry">Relation to SfM and photogrammetry</a></li>
+  <li><a href="#fit-to-the-indoor-capture-project" id="toc-fit-to-the-indoor-capture-project" class="nav-link" data-scroll-target="#fit-to-the-indoor-capture-project">Fit to the indoor capture project</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content column-page-right" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">VIO and SLAM</h1>
+</div>
+
+
+
+<div class="quarto-title-meta column-page-right">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<p>Notes on visual-inertial odometry (VIO), SLAM (simultaneous localization and mapping), and the estimation layer that lets a drone fly indoors without GPS. Assumes comfort with linear algebra, rotations, and sensors, but no prior state-estimation background.</p>
+<p>Core take: <strong>VIO answers “where am I relative to where I started”; SLAM answers “where am I in a map I am building, and do I recognize this place.”</strong> VIO is odometry — it integrates motion and drifts without bound. SLAM adds a persistent map and loop closure, which is what bounds the drift. Everything else in the field is detail on top of this split.</p>
+<p>The second organizing fact: shipped autonomy stacks do not run one monolithic SLAM system. They run <strong>sparse VIO for the flight controller</strong> (smooth, fast, drifting) and a <strong>separate dense mapper for the planner</strong> (consistent, slow, allowed to jump when corrected). Most integration pain — and most of the architecture work left to us in the indoor capture project — lives at the seam between the two.</p>
+<section id="the-estimation-problem" class="level2">
+<h2 class="anchored" data-anchor-id="the-estimation-problem">The estimation problem</h2>
+<p>A multirotor’s controller needs, at a few hundred Hz: orientation, angular rate, velocity, and position, plus their uncertainties. Outdoors, GNSS (satellite positioning — GPS and its siblings) anchors position and the rest follows from cheap sensor fusion. Indoors nothing anchors anything: the IMU (inertial measurement unit — 3-axis accelerometer plus gyroscope) alone gives orientation and, briefly, motion — but position from an IMU means double-integrating noisy acceleration, and the error grows quadratically. A consumer-grade MEMS (microfabricated silicon) IMU is off by meters within seconds.</p>
+<p>So GPS-denied flight is a state-estimation problem: fuse the IMU with a sensor that observes the world outside the vehicle (camera, lidar, ToF — time-of-flight) and use the static geometry it sees as the position reference the IMU lacks — estimating everything relative to where the vehicle started.</p>
+<p>Two properties frame everything downstream:</p>
+<ul>
+<li><strong>Some states are observable, some are not.</strong> Gravity makes roll and pitch absolutely observable — they do not drift. Yaw and position have no absolute reference indoors; they are only ever estimated <em>relative</em> to the starting pose, and their error accumulates with distance traveled. Good VIO drifts 0.3–1% of trajectory length: after 100 m of indoor flight, expect to be 0.3–1 m off. No amount of odometry polish removes this — only recognizing a previously seen place (loop closure) or an external reference does.</li>
+<li><strong>The output frame is local.</strong> The origin is wherever the estimator initialized, gravity-aligned. Nothing ties it to a building floor plan, a previous session’s map, or true north; aligning to any of those is a separate problem (registration) with its own machinery.</li>
+</ul>
+<p>Frame conventions — NED/FRD (north-east-down world, forward-right-down body) on the flight-control side, ENU/FLU (east-north-up, forward-left-up) on the ROS side — are a standing source of integration bugs: an orientation must be converted at both its world and body ends, and a bridge that fixes only one end flies with mirrored yaw. MAVROS and the PX4 ROS 2 interface library do this correctly; hand-rolled bridges must get it right themselves.</p>
+</section>
+<section id="vio-why-a-camera-plus-an-imu" class="level2">
+<h2 class="anchored" data-anchor-id="vio-why-a-camera-plus-an-imu">VIO: why a camera plus an IMU</h2>
+<p>Visual-inertial odometry fuses a camera (mono, stereo, or more) with an IMU to estimate 6-DoF pose at high rate. The pairing works because the two sensors fail in complementary ways:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>IMU</th>
+<th>Camera</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Rate</td>
+<td>200 Hz–1 kHz</td>
+<td>15–60 Hz</td>
+</tr>
+<tr class="even">
+<td>Short-term</td>
+<td>excellent</td>
+<td>blur, rolling shutter</td>
+</tr>
+<tr class="odd">
+<td>Long-term</td>
+<td>drifts in seconds</td>
+<td>drift-free <em>relative</em> geometry</td>
+</tr>
+<tr class="even">
+<td>Absolute scale</td>
+<td>observable (measures m/s²)</td>
+<td>unobservable with one camera</td>
+</tr>
+<tr class="odd">
+<td>Failure modes</td>
+<td>bias wander, vibration</td>
+<td>low texture, low light, fast rotation</td>
+</tr>
+<tr class="even">
+<td>“Loses lock”</td>
+<td>never</td>
+<td>routinely</td>
+</tr>
+</tbody>
+</table>
+<p>The IMU bridges between camera frames and makes <strong>metric scale observable</strong> for monocular setups — accelerations tell you how large the world is. The camera anchors the IMU’s bias states and velocity. Neither sensor alone survives drone speeds and rotation rates; together they are the cheapest, lightest full-pose sensor that exists, which is why every phone AR (augmented reality) stack (ARKit, ARCore) and every small-drone autonomy stack is built on VIO.</p>
+<p>Two non-obvious consequences of the fusion math:</p>
+<ul>
+<li><strong>VIO needs excitation.</strong> Scale and bias become observable only under accelerated motion. Constant velocity or a long pure hover degrades the estimate; most systems require a deliberate motion (a small jerk or figure) during initialization before the output is trustworthy.</li>
+<li><strong>The IMU noise model is load-bearing.</strong> The estimator co-estimates slowly-wandering accelerometer and gyro biases, weighted by a stochastic model (white noise density + bias random walk, classically identified from an <a href="https://github.com/ori-drs/allan_variance_ros">Allan variance</a> log). Feeding a simulator’s broken IMU model into real VIO code produces confidently wrong output — the exact failure class our B1.4 IMU audit measured in Pegasus (accel bias silently dropped, gyro tau copy-pasted).</li>
+</ul>
+</section>
+<section id="anatomy-of-a-vio-pipeline" class="level2">
+<h2 class="anchored" data-anchor-id="anatomy-of-a-vio-pipeline">Anatomy of a VIO pipeline</h2>
+<p>Every system decomposes the same way:</p>
+<p><strong>Frontend — feature tracking.</strong> Detect sparse interest points (FAST corners — Features from Accelerated Segment Test; ORB features — Oriented FAST and Rotated BRIEF) and track them across frames, either by descriptor matching or KLT (Kanade–Lucas–Tomasi) optical flow. Reject outliers with RANSAC (random sample consensus — fit on random minimal subsets, keep the largest inlier set) on epipolar geometry. The frontend is where the environment decides how much information the pipeline gets at all — texture, lighting, and motion blur act here. Every stage after it only processes what the frontend delivered; none can recover what it lost.</p>
+<p><strong>IMU preintegration.</strong> Between two camera frames there are hundreds of IMU samples. Preintegration (Forster et al.) compresses them into a single relative-motion constraint whose value can be cheaply re-linearized when the bias estimate changes, so the backend never touches raw samples.</p>
+<p><strong>Backend — the estimator.</strong> Two schools:</p>
+<ul>
+<li><strong>Filtering (EKF — extended Kalman filter — and specifically the MSCKF).</strong> The multi-state constraint Kalman filter (Mourikis &amp; Roumeliotis 2007) keeps a sliding window of past camera <em>poses</em> in an EKF state and uses each feature track as a constraint across them — landmarks never enter the state, so cost stays fixed and low. This is the lineage of phone AR and of Qualcomm’s closed <code>mvVISLAM</code> that ships as qVIO on VOXL (see <a href="./voxl2_mini.html#software-voxl-sdk">VOXL 2 Mini</a>): ~30 Hz pose at a fraction of one core.</li>
+<li><strong>Sliding-window optimization.</strong> Nonlinear least squares over the last N keyframes plus landmarks, older states marginalized out. More accurate, more CPU. VINS-Fusion, ORB-SLAM3’s VI mode, Basalt, and NVIDIA’s cuVSLAM are here; OpenVINS is a well-documented hybrid on the MSCKF side.</li>
+</ul>
+<p><strong>Output contract.</strong> Pose + velocity + covariance at IMU or camera rate, in a gravity-aligned local frame, plus a quality/health signal. The covariance and the health signal matter as much as the pose: the consumer (flight controller, mapper) must know when to stop trusting the estimate.</p>
+<p>The filter-vs-optimization tradeoff is mostly compute-vs-accuracy, and it has converged in practice: filters on embedded targets and phones, optimization where there is CPU/GPU headroom, with the accuracy gap narrowing as MSCKF variants improved.</p>
+<p><strong>Compute.</strong> VIO is cheap — it ran on 2014 phone SoCs (Project Tango), and qVIO takes ~10–15% of one QRB5165 core because the frontend rides the DSP/ISP (digital / image signal processors — the SoC’s camera-adjacent co-processors). Budget roughly <strong>one core-equivalent</strong> on a modern ARM board for feature-based VIO at VGA (640×480) / 30 Hz; cost scales with feature count × frame rate (resolution barely matters — accuracy comes from geometry and sub-pixel tracking, so VGA is standard). VIO is never the reason to buy a bigger companion computer; mapping and planning are.</p>
+</section>
+<section id="what-the-hardware-must-provide" class="level2">
+<h2 class="anchored" data-anchor-id="what-the-hardware-must-provide">What the hardware must provide</h2>
+<p>VIO quality is decided before any algorithm runs. The requirements, in order of how often violating them ruins a system:</p>
+<ul>
+<li><strong>Global shutter.</strong> Rolling shutter skews geometry under motion; it can be modeled, but every serious tracking camera avoids it instead. This is why VOXL tracking cameras are VGA global-shutter fisheyes rather than anything higher-resolution: for odometry, geometry beats pixels.</li>
+<li><strong>Wide field of view.</strong> A fisheye keeps features in view through aggressive rotation and guarantees parallax somewhere in the image. Resolution is nearly irrelevant — features are tracked to sub-pixel accuracy anyway.</li>
+<li><strong>Hardware timestamping and sync.</strong> The estimator needs camera exposure midpoints and IMU samples on one clock, to well under a millisecond. USB cameras with software timestamps are how hobby VIO projects die.</li>
+<li><strong>Rigid mounting and calibration.</strong> Camera intrinsics, camera–IMU extrinsics (rotation to ~0.1°, translation to ~mm), and the camera–IMU time offset. <a href="https://github.com/ethz-asl/kalibr">Kalibr</a> is the standard offline tool; some estimators (VINS, OpenVINS) refine extrinsics and time offset online. Miscalibration is the classic <em>silent</em> accuracy killer — everything runs, the numbers are just worse than they should be.</li>
+<li><strong>Vibration isolation.</strong> Multirotor frames resonate at frequencies that alias into the IMU band; soft-mounting the IMU/camera assembly is standard.</li>
+</ul>
+<p>Integrated platforms (VOXL, Skydio, phone AR) win not on algorithms but on having done this sensor engineering once, correctly, at the factory — per-unit calibrated, synced, and vibration-characterized.</p>
+</section>
+<section id="slam-odometry-plus-a-map-plus-recognition" class="level2">
+<h2 class="anchored" data-anchor-id="slam-odometry-plus-a-map-plus-recognition">SLAM: odometry plus a map plus recognition</h2>
+<p>Simultaneous localization and mapping takes odometry and adds three things:</p>
+<ol type="1">
+<li><strong>A map as a first-class product</strong> — a sparse landmark cloud, a graph of keyframes, or a dense volume, depending on what the map is <em>for</em>.</li>
+<li><strong>Place recognition.</strong> Recognize that the current view matches a previously visited place — classically bag-of-visual-words (<a href="https://github.com/dorian3d/DBoW2">DBoW2</a>), increasingly learned global descriptors (NetVLAD lineage) — then verify geometrically and compute the relative pose between now and then.</li>
+<li><strong>Global correction.</strong> The new loop-closure constraint contradicts the drifted odometry chain, so re-optimize. The standard machinery is a <strong>pose graph</strong>: nodes are keyframe poses, edges are relative-pose constraints from odometry and loop closures; solving it (g2o, Ceres, <a href="https://gtsam.org/">GTSAM</a>) snaps the whole trajectory and map back into consistency.</li>
+</ol>
+<p>The modern unifying view is the <strong>factor graph</strong>: variables (poses, velocities, biases, landmarks) connected by factors (preintegrated IMU, feature observations, loop closures, GPS when present). SLAM is incremental inference over that graph — iSAM2 (incremental smoothing and mapping) is the incremental solver — and a filter is just one way of approximating it. Dellaert’s <a href="https://www.cc.gatech.edu/~dellaert/pubs/Dellaert17fnt.pdf">Factor Graphs for Robot Perception</a> is the canonical treatment.</p>
+<p>Under the same umbrella:</p>
+<ul>
+<li><strong>Relocalization</strong> — recover from tracking loss, or wake up inside an existing map, via the same place-recognition machinery.</li>
+<li><strong>Map reuse</strong> — localize today against yesterday’s map. Once the map is frozen this stops being SLAM and becomes plain localization, which is cheaper and more robust; multi-session systems (ORB-SLAM3’s atlas, ARKit/ARCore persistent anchors) blur the line.</li>
+</ul>
+<p>What loop closure buys, concretely: drift stops scaling with <em>distance traveled</em> and starts scaling with <em>distance since the last revisit</em>. For a coverage mission that repeatedly crosses its own path — exactly the indoor capture pattern — that is the difference between centimeter- and meter-level map consistency.</p>
+<p><strong>Compute.</strong> Unlike VIO, the SLAM additions have unbounded and spiky costs: descriptor extraction on every keyframe is a steady tax, place-recognition queries are milliseconds, but pose-graph solves grow with trajectory length and spike to hundreds of milliseconds on a long mission. All of it belongs on a background core — never in the control path, which only ever consumes the smooth odometry stream.</p>
+</section>
+<section id="the-taxonomy" class="level2">
+<h2 class="anchored" data-anchor-id="the-taxonomy">The taxonomy</h2>
+<p>Axes along which systems differ, and where the field settled:</p>
+<ul>
+<li><strong>Sparse vs dense.</strong> Sparse systems track a few hundred feature points — enough to estimate the sensor’s own motion, but their “map” is a scatter of isolated landmarks, useless for collision checking. Dense/volumetric systems model surfaces and free space — maps a planner can consume. Deployed stacks run one of each, split as described below.</li>
+<li><strong>Indirect vs direct.</strong> Indirect matches features; direct methods (LSD-SLAM, DSO — Direct Sparse Odometry) minimize photometric error on raw pixels, which handles low-texture scenes better but hates rolling shutter, auto-exposure, and lighting change. Feature-based won in deployed systems; direct survives in research and as hybrid refinement.</li>
+<li><strong>Visual vs lidar.</strong> Lidar-inertial odometry (FAST-LIO2, LIO-SAM) measures geometry directly: robust to lighting and texture, indifferent to darkness, heavier and costlier. On small indoor drones the weight budget usually forces visual; on anything that can lift a spinning or solid-state lidar, lidar-inertial is the more robust default and is what the survey-grade indoor platforms (<a href="./flight_compute_landscape.html">Flyability, Emesent, Exyn</a>) fly. RGB-D (color plus per-pixel depth) and ToF sit between: direct depth like lidar, camera-class range and noise (see the ToF-vs-lidar explainer in <a href="./voxl2_mini.html#tof-vs-lidar">VOXL 2 Mini</a>).</li>
+<li><strong>Classical vs learned.</strong> Learned components are replacing <em>modules</em> — features (SuperPoint), matching (SuperGlue/LightGlue), place recognition, monocular depth priors — while the estimation core of every deployed system remains classical geometry plus optimization. End-to-end learned SLAM (DROID-SLAM lineage, and Gaussian-splatting SLAM such as SplaTAM/MonoGS) produces impressive offline results and is not yet what anyone flies on an embedded board.</li>
+<li><strong>Semantic/metric-semantic.</strong> Attaching object/room labels to the map (Kimera, Hydra scene graphs). Directly relevant to capture products — “this is a door, this is a room” is the structure a house viewer needs — but a layer above the estimation problem, not part of it.</li>
+</ul>
+</section>
+<section id="inputs-images-depth-maps-point-clouds" class="level2">
+<h2 class="anchored" data-anchor-id="inputs-images-depth-maps-point-clouds">Inputs: images, depth maps, point clouds</h2>
+<p>A common misconception is that SLAM consumes depth maps. Only one family does; what each family takes in:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Family</th>
+<th>Input</th>
+<th>Depth is…</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Monocular / VI SLAM</td>
+<td>RGB images (+ IMU)</td>
+<td>an <strong>output</strong>, triangulated from parallax</td>
+</tr>
+<tr class="even">
+<td>Stereo SLAM</td>
+<td>two images</td>
+<td>computable, often skipped — features matched across views directly</td>
+</tr>
+<tr class="odd">
+<td><strong>RGB-D SLAM</strong></td>
+<td>color + per-pixel depth map</td>
+<td>an <strong>input</strong>, measured by the sensor</td>
+</tr>
+<tr class="even">
+<td>Lidar SLAM</td>
+<td>point clouds</td>
+<td>the input, in a different sampling pattern</td>
+</tr>
+<tr class="odd">
+<td>Dense mapping (any stack)</td>
+<td>posed depth, always</td>
+<td>required — free space can only be ray-cast through measured range</td>
+</tr>
+</tbody>
+</table>
+<p><strong>RGB-D in more depth</strong>, since it is the natural indoor modality. The depth map comes from one of three sensor technologies:</p>
+<ul>
+<li><strong>Time-of-flight</strong> — modulated IR (infrared) light, per-pixel phase → range. Compact, fast, low resolution; the VOXL ToF module (PMD/IRS2975C, see <a href="./voxl2_mini.html#cameras-and-sensors">VOXL 2 Mini</a>) is this, ~5 m indoor range.</li>
+<li><strong>Structured light</strong> — project an IR pattern, decode deformation (original Kinect, iPhone FaceID). Precise close-in, poor beyond a few meters, defeated by sunlight.</li>
+<li><strong>Active stereo</strong> — plain stereo matching helped by a projected IR texture (RealSense D4xx). Degrades to passive stereo where the projector doesn’t reach; the most flexible of the three.</li>
+</ul>
+<p>What direct depth buys the estimator: <strong>metric scale with no motion required</strong> (the motion-based initialization monocular VIO depends on becomes unnecessary), depth for every pixel including textureless walls (the indoor killer for visual methods), and dense maps essentially free — KinectFusion-lineage systems fuse depth frames straight into a TSDF. RTAB-Map and ORB-SLAM3’s RGB-D mode are the standard open systems; ElasticFusion the classic dense research line.</p>
+<p>The costs, and why drones still fly on VIO-plus-depth rather than RGB-D SLAM: active IR range tops out around 4–6 m indoors and collapses outdoors in sunlight; dark, absorbing, and reflective surfaces return no or false depth; rolling-shutter color cameras and unsynced depth/color pairs break fast motion; and the sensors cost weight and power. So the typical drone architecture keeps the fisheye+IMU VIO as the pose backbone and treats depth (ToF, stereo, lidar) as a <em>mapping</em> sensor consuming VIO poses — RGB-D SLAM proper shines on slower platforms: handheld scanners, ground robots, and close-range inspection.</p>
+</section>
+<section id="dense-mapping-the-other-half-of-the-stack" class="level2">
+<h2 class="anchored" data-anchor-id="dense-mapping-the-other-half-of-the-stack">Dense mapping: the other half of the stack</h2>
+<p>The planner does not want poses; it wants to know what space is occupied, free, and — critically for exploration — <em>unknown</em>. Dense mapping consumes posed depth (from stereo, ToF, lidar, or back-projected depth images, as in our B2.1 lesson) and maintains a volumetric world model:</p>
+<ul>
+<li><strong>Occupancy grids / octrees</strong> (<a href="https://octomap.github.io/">OctoMap</a>, 2D or 3D): per-voxel occupied/free/unknown via ray-casting from the sensor origin. The free/unknown distinction is what makes frontier-based exploration possible at all — a frontier <em>is</em> the free/unknown boundary.</li>
+<li><strong>TSDF</strong> (truncated signed distance field): per-voxel signed distance to the nearest surface, fused over many depth frames. Averages sensor noise into clean surfaces; meshes well (marching cubes). The reconstruction-friendly representation.</li>
+<li><strong>ESDF</strong> (Euclidean signed distance field): per-voxel distance to the nearest <em>obstacle</em>, derived from the TSDF or occupancy. This is the planner-friendly representation — collision margin queries and trajectory optimization gradients come for free.</li>
+</ul>
+<p><a href="https://github.com/ethz-asl/voxblox">voxblox</a> (ETH-ASL — ETH Zurich’s Autonomous Systems Lab; TSDF→ESDF on CPU) is the classic implementation and is what the VOXL SDK vendors inside <code>voxl-mapper</code>; <a href="https://github.com/nvidia-isaac/nvblox">nvblox</a> is the GPU-resident successor in Isaac ROS; <a href="http://introlab.github.io/rtabmap/">RTAB-Map</a> packages SLAM-plus-dense-mapping as one ROS-native system. This layer, not odometry, is what sizes the computer: voxblox at useful resolution occupies 1–2 CPU cores on its own, and nvblox exists precisely because volumetric fusion is the part worth a GPU.</p>
+<p>The architectural point everything else rests on: the dense map is only as consistent as the poses feeding it. Odometry drift smears walls into double surfaces — the corruption mode the B1.3/B2.1 injected-pose negative controls demonstrate deliberately. Systems handle this either by keeping missions short relative to drift, or by rebuilding/deforming the volume after loop closures (submapping: fuse locally rigid chunks, re-pose the chunks on correction).</p>
+</section>
+<section id="where-the-compute-lives-cpu-vs-gpunpudsp" class="level2">
+<h2 class="anchored" data-anchor-id="where-the-compute-lives-cpu-vs-gpunpudsp">Where the compute lives: CPU vs GPU/NPU/DSP</h2>
+<p>Classical SLAM is, first-order, a CPU workload — but the accurate statement is per <em>stage</em>: the pixel-facing stages offload well and increasingly do, while the estimation core resists offload and stays on the CPU.</p>
+<p><strong>Stays on CPU:</strong></p>
+<ul>
+<li><strong>The solvers.</strong> MSCKF updates, sliding-window solves, pose-graph and bundle adjustment via Ceres/g2o/GTSAM. These are <em>sparse</em>, irregular linear algebra: small variable blocks, data-dependent sparsity, iterative relinearization with branching. GPUs want large, regular, dense batches; a 20-keyframe window solve is none of that. GPU bundle adjustment exists as research (MegBA and kin); no deployed stack uses it.</li>
+<li><strong>Graph bookkeeping</strong> — keyframe management, place-recognition indices, covisibility graphs: pointer-chasing code.</li>
+</ul>
+<p><strong>Routinely offloaded:</strong></p>
+<ul>
+<li><strong>The frontend</strong> — the one genuinely image-parallel estimation stage. Feature detection, pyramid building, KLT tracking: qVIO runs this on the Hexagon DSP/ISP (the whole trick behind its ~10% core cost), cuVSLAM on CUDA, phones on their ISP blocks.</li>
+<li><strong>Depth computation.</strong> Stereo matching is embarrassingly parallel and often never touches the host: the RealSense D435i computes depth on its own onboard ASIC (application-specific chip) and ships finished depth maps over USB; VOXL’s DFS (depth-from-stereo) runs on DSP/GPU; Isaac ROS runs SGM (semi-global matching) on the GPU.</li>
+<li><strong>Volumetric fusion.</strong> TSDF integration is per-voxel parallel — nvblox is GPU-resident end to end.</li>
+<li><strong>Learned components.</strong> SuperPoint-class features, learned place recognition, monocular depth: NPU (neural processing unit) / GPU by construction. “Features on the NPU, solver on the CPU” is becoming the embedded pattern.</li>
+</ul>
+<p>Sizing consequence: a companion computer needs a couple of strong CPU cores regardless of how large its GPU/NPU is — and conversely, a GPU buys mapping and learned perception, not better odometry. Fully-GPU systems exist only in the learned lineage (DROID-SLAM runs everything, including its update operator, on GPU), and those are not embedded-deployable today.</p>
+</section>
+<section id="systems-worth-knowing-by-name" class="level2">
+<h2 class="anchored" data-anchor-id="systems-worth-knowing-by-name">Systems worth knowing by name</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>System</th>
+<th>Kind</th>
+<th>License</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://docs.openvins.com/">OpenVINS</a></td>
+<td>VIO, MSCKF</td>
+<td>GPL-3.0</td>
+<td>Cleanest documented MSCKF; the reference open VIO and the best codebase to <em>learn</em> from</td>
+</tr>
+<tr class="even">
+<td><a href="https://github.com/HKUST-Aerial-Robotics/VINS-Fusion">VINS-Fusion</a></td>
+<td>VIO + loop closure</td>
+<td>GPL-3.0</td>
+<td>Sliding-window optimization; battle-tested on drones; optional GPS fusion</td>
+</tr>
+<tr class="odd">
+<td><a href="https://github.com/UZ-SLAMLab/ORB_SLAM3">ORB-SLAM3</a></td>
+<td>Full VI-SLAM</td>
+<td>GPL-3.0</td>
+<td>Accuracy benchmark king; multi-map atlas, relocalization; heavier, touchier to integrate</td>
+</tr>
+<tr class="even">
+<td><a href="https://gitlab.com/VladyslavUsenko/basalt">Basalt</a></td>
+<td>VIO + mapping</td>
+<td>BSD-3</td>
+<td>Fast optimization-based VIO from TUM; permissive license</td>
+</tr>
+<tr class="odd">
+<td><a href="https://github.com/MIT-SPARK/Kimera">Kimera</a></td>
+<td>VI-SLAM + semantic mesh</td>
+<td>BSD-2</td>
+<td>MIT-SPARK; metric-semantic; research-grade</td>
+</tr>
+<tr class="even">
+<td><a href="https://nvidia-isaac-ros.github.io/repositories_and_packages/isaac_ros_visual_slam/index.html">cuVSLAM / Isaac ROS Visual SLAM</a></td>
+<td>Stereo VI-SLAM, GPU</td>
+<td>proprietary, free</td>
+<td>The Jetson-native option; loop closure included; see <a href="./nvidia_isaac_ecosystem.html#isaac-ros">Isaac ecosystem</a></td>
+</tr>
+<tr class="odd">
+<td>qVIO / <code>mvVISLAM</code></td>
+<td>VIO, MSCKF</td>
+<td>closed</td>
+<td>Qualcomm; ships on <a href="./voxl2_mini.html#software-voxl-sdk">VOXL</a>; ~30 Hz, ~10% of one core; odometry only — no loop closure</td>
+</tr>
+<tr class="even">
+<td><a href="http://introlab.github.io/rtabmap/">RTAB-Map</a></td>
+<td>RGB-D/stereo SLAM + dense map</td>
+<td>BSD-3</td>
+<td>“Just give me a map in ROS”; long-term memory for large spaces</td>
+</tr>
+<tr class="odd">
+<td><a href="https://github.com/hku-mars/FAST_LIO">FAST-LIO2</a></td>
+<td>Lidar-inertial odometry</td>
+<td>GPL-2.0</td>
+<td>The LIO default; tightly-coupled, very robust indoors</td>
+</tr>
+<tr class="even">
+<td><a href="https://github.com/TixiaoShan/LIO-SAM">LIO-SAM</a></td>
+<td>Lidar-inertial SLAM</td>
+<td>BSD-3</td>
+<td>Factor-graph LIO with loop closure</td>
+</tr>
+<tr class="odd">
+<td>ARKit / ARCore</td>
+<td>VIO + relocalization</td>
+<td>closed</td>
+<td>Phone AR; the largest-scale deployed VIO; useful as a capture-pose source (see <a href="./3d_photo_reconstruction.html">3D photo reconstruction</a>)</td>
+</tr>
+<tr class="even">
+<td><a href="https://github.com/princeton-vl/DROID-SLAM">DROID-SLAM</a></td>
+<td>Learned dense SLAM</td>
+<td>BSD-3</td>
+<td>End-to-end learned lineage; GPU-hungry, offline/near-line</td>
+</tr>
+</tbody>
+</table>
+<p>Practical selection logic: on VOXL, qVIO is already integrated and calibrated — use it and manage drift (ModalAI’s SDK also carries an OpenVINS-based server as the open successor path). On Jetson, cuVSLAM. On a PC with ROS 2 and an RGB-D or stereo camera, RTAB-Map for maps or OpenVINS/VINS-Fusion for odometry. If the platform lifts a lidar, FAST-LIO2 and stop worrying about texture and light. GPL licenses matter the moment estimation code links into a shipped product — one reason vendors keep VIO closed or BSD.</p>
+</section>
+<section id="integration-with-the-flight-stack" class="level2">
+<h2 class="anchored" data-anchor-id="integration-with-the-flight-stack">Integration with the flight stack</h2>
+<p>The autopilot’s estimator (PX4 EKF2, ArduPilot’s EKF3) is <em>not</em> SLAM and not even full VIO — it is a fusion filter over IMU, baro, mag, GNSS, and, GPS-denied, an external odometry input. The division of labor: VIO estimates pose; the autopilot EKF makes it flight-control-grade — outlier gating, consistent covariance, smooth high-rate output, graceful degradation.</p>
+<p>External estimates enter via MAVLink <a href="https://mavlink.io/en/messages/common.html#ODOMETRY"><code>ODOMETRY</code></a> (pose + twist + covariances + explicit source frames) or, on the PX4 ROS 2 path, the uXRCE-DDS (PX4’s direct DDS bridge, see <a href="./ros.html#relevance-to-indoor-autonomous-capture">ROS, from zero</a>) <code>VehicleVisualOdometry</code> topic — the interface the VOXL <code>voxl-hitl-vio-server</code> exposes on UDP 14560 for simulator injection. Frame fields (<code>MAV_FRAME_LOCAL_FRD</code>, <code>MAV_FRAME_BODY_FRD</code>) must be set correctly; the EKF will happily fuse mirrored velocities.</p>
+<p>The part of the contract that is easy to miss is <strong>reset and jump semantics</strong>. When SLAM loop-closes or relocalizes, its pose estimate <em>jumps</em> — sometimes by meters. A position controller fed that jump executes a step response into a wall. Hence the two-frame architecture, standardized in ROS as <a href="https://www.ros.org/reps/rep-0105.html">REP-105</a>:</p>
+<ul>
+<li><strong><code>odom</code> frame</strong> — continuous, smooth, drifting. Odometry lives here; the controller consumes this and nothing else.</li>
+<li><strong><code>map</code> frame</strong> — globally consistent, allowed to jump. Loop-closed SLAM poses live here; the planner and the dense map consume this. The correction is published as a slowly-updating <code>map→odom</code> transform rather than as a rewritten robot pose.</li>
+</ul>
+<p><code>ODOMETRY</code> carries a <code>reset_counter</code> so consumers can detect discontinuities; PX4’s EKF gates innovation spikes and can reset its own origin. In practice the safe pattern is: feed the autopilot only smooth odometry, keep loop-closed consistency for the map and planner, and treat any frame jump as a planning event, never a control event.</p>
+</section>
+<section id="failure-modes" class="level2">
+<h2 class="anchored" data-anchor-id="failure-modes">Failure modes</h2>
+<p>The reflexes to build, roughly ordered by how often each one bites indoors:</p>
+<ul>
+<li><strong>Texture-poor surfaces.</strong> Blank walls and ceilings are the indoor killer — no corners, no tracks, no constraint. Wide FOV mitigates (something textured is usually visible somewhere); lidar/ToF is immune.</li>
+<li><strong>Low light and motion blur.</strong> Exposure time trades noise against blur; indoor light levels force that tradeoff into the bad region. Fast yaw at long exposure destroys feature tracks — our B1.2 lesson’s 360° spin is a gentle version of a genuinely hostile maneuver.</li>
+<li><strong>Pure rotation.</strong> No translation means no parallax means depth unobservable. Brief rotations coast on the IMU; sustained rotation-in-place degrades the map.</li>
+<li><strong>Dynamic scenes.</strong> Everything above assumes a static world. People, pets, and doors violate it. Frontends reject moving features as outliers, which works while the moving things are a minority of the image — a scene that is <em>mostly</em> in motion defeats the voting and drags the estimate with it.</li>
+<li><strong>Reflective and transparent surfaces.</strong> Mirrors and glass present geometrically false features (and false depth to active sensors) — a genuinely unsolved practical problem for indoor capture.</li>
+<li><strong>Initialization.</strong> Monocular VIO needs motion before scale converges; taking off on an unconverged estimator is a classic crash. Stereo and direct depth largely remove this.</li>
+<li><strong>Calibration and sync errors.</strong> Silent, systematic, and worst of all <em>plausible</em> — the system works, drifts twice as fast as it should, and nothing flags it. When odometry quality is mysteriously bad, recalibrate before tuning.</li>
+</ul>
+<p>The honest-evaluation corollary: every one of these degrades <em>accuracy</em> long before it triggers a <em>failure signal</em>. Estimator health flags are optimistic; ground truth (motion capture, or simulation — the B2 spine’s advantage) is the only arbiter that does not lie.</p>
+</section>
+<section id="evaluating-an-estimator" class="level2">
+<h2 class="anchored" data-anchor-id="evaluating-an-estimator">Evaluating an estimator</h2>
+<p>Standard metrics, all computed against ground truth after aligning trajectories (Umeyama alignment; yaw-and-position only for VIO, since roll, pitch, and scale are observable and should <em>not</em> be aligned away):</p>
+<ul>
+<li><strong>ATE</strong> (absolute trajectory error): RMSE (root-mean-square error) of position over the aligned trajectory. One number, dominated by drift; the headline benchmark metric.</li>
+<li><strong>RPE</strong> (relative pose error): error accumulated over fixed sub-trajectory lengths (e.g.&nbsp;per 10 m). Measures local odometry quality independent of loop closure, and is the honest number for a drifting system.</li>
+<li>Percent drift (error per distance traveled), and for mapping, point-to-plane or chamfer distance of the reconstructed surface — the same family of metrics GLEAM-Bench uses for coverage evaluation.</li>
+</ul>
+<p><a href="https://github.com/MichaelGrupp/evo">evo</a> is the standard tool; it consumes TUM/EuRoC/KITTI trajectory formats and does alignment and plotting.</p>
+<p>Benchmarks that matter: <a href="https://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets">EuRoC MAV</a> (the VIO standard — onboard drone stereo+IMU with mm ground truth), <a href="https://cvg.cit.tum.de/data/datasets/visual-inertial-dataset">TUM-VI</a> (handheld fisheye, harder lighting), KITTI (outdoor automotive), and the <a href="https://hilti-challenge.com/">Hilti SLAM Challenge</a> (construction sites — the closest public proxy for hostile indoor capture conditions).</p>
+<p>Simulation adds the one thing real benchmarks cannot: perfect, free ground truth for <em>every</em> run plus controllable negative controls (inject pose error, break the IMU model, remove texture). That is the evaluation posture of the B2 block of our Isaac lesson plan — measure drift against ground truth in sim, so that on hardware, where truth is unavailable, the failure signatures are already familiar.</p>
+</section>
+<section id="relation-to-sfm-and-photogrammetry" class="level2">
+<h2 class="anchored" data-anchor-id="relation-to-sfm-and-photogrammetry">Relation to SfM and photogrammetry</h2>
+<p>Offline reconstruction — structure-from-motion (SfM) as implemented by <a href="https://colmap.github.io/">COLMAP</a> — is the same mathematics without the real-time constraint: match features across <em>all</em> images, solve one global bundle adjustment over every pose and point. Because it sees everything at once, it beats any online system on accuracy; because it is batch, it can take hours and can fail wholesale on sequences an online tracker would have survived incrementally.</p>
+<p>How the two relate in a capture pipeline:</p>
+<ul>
+<li><strong>SLAM poses initialize SfM.</strong> COLMAP’s hardest and slowest stage is figuring out approximate poses from nothing; online odometry provides them nearly free, turning global SfM into a refinement problem. ARKit/ARCore poses accompanying phone captures serve the same role (the pose-capture thread in <a href="./3d_photo_reconstruction.html#capture-constraints">3D photo reconstruction</a>).</li>
+<li><strong>SfM output feeds novel-view synthesis.</strong> 3D Gaussian Splatting and NeRF (neural radiance field) pipelines consume COLMAP poses/points as their standard input format — the reconstruction quality ceiling is set by pose quality.</li>
+<li><strong>Online SLAM guarantees coverage; offline SfM delivers quality.</strong> The drone flies on VIO, the coverage planner decides completeness from the dense map, and the high-quality imagery is reconstructed offline afterwards. The final model does not inherit online drift — SfM re-solves geometry from scratch, using online poses only as hints.</li>
+</ul>
+<p>This split — navigate on the fast rough estimate, reconstruct on the slow accurate one — is the architecture assumption of the whole <a href="./autonomous_drone_navigation.html">indoor capture project</a>.</p>
+</section>
+<section id="fit-to-the-indoor-capture-project" class="level2">
+<h2 class="anchored" data-anchor-id="fit-to-the-indoor-capture-project">Fit to the indoor capture project</h2>
+<p>Where each piece lands for us:</p>
+<ul>
+<li><strong>Odometry is a solved procurement problem, not a research problem.</strong> Every candidate platform ships it: qVIO on VOXL, cuVSLAM on Jetson, ARKit/ARCore on phones. We should not write a VIO system; we should characterize the one we get (drift rate, failure conditions, health-signal honesty) and design around it.</li>
+<li><strong>Loop closure is the open question per platform.</strong> qVIO has none — on VOXL, map consistency over a whole-house mission is our problem, solved either by mission structure (short submaps, frequent revisits of a start region) or by running an external SLAM layer (OpenVINS/VINS-Fusion on the companion side) alongside the shipped VIO.</li>
+<li><strong>The dense map is where our product logic lives.</strong> Occupied/free/unknown drives frontier exploration and the coverage ledger; TSDF/ESDF drives safe planning. voxblox (on-platform) and nvblox (PC-side) are the defaults — this layer is open, mature, and ours to orchestrate rather than reimplement.</li>
+<li><strong>The two-frame discipline is a design requirement from day one.</strong> Smooth <code>odom</code> for control, consistent <code>map</code> for planning, corrections as transforms, jumps as planning events. Retrofitting this after building on a single-frame assumption is a rewrite.</li>
+<li><strong>Sim-first evaluation.</strong> Measure estimator drift and map corruption against ground truth in Isaac/Pegasus (B2), with injected-error negative controls, before trusting any of it on hardware where no ground truth exists.</li>
+</ul>
+<p>The competitive read from <a href="./flight_compute_landscape.html#the-autonomy-scorecard">the landscape survey</a> holds here: estimation and local mapping are commodities; autonomous <em>goal selection</em> on top of them — where to go so the capture is complete — is the differentiating layer, and no shipped stack provides it.</p>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<p>Surveys and foundations:</p>
+<ul>
+<li><a href="https://rpg.ifi.uzh.ch/docs/VO_Part_I_Scaramuzza.pdf">Scaramuzza &amp; Fraundorfer, Visual Odometry tutorial, parts I</a> <a href="https://rpg.ifi.uzh.ch/docs/VO_Part_II_Scaramuzza.pdf">&amp; II</a> — the standard entry point.</li>
+<li><a href="https://arxiv.org/abs/1606.05830">Cadena et al.&nbsp;2016, Past, Present, and Future of SLAM</a> — the field map; still the best orientation read.</li>
+<li><a href="https://arxiv.org/abs/1906.02650">Huang 2019, Visual-Inertial Navigation: A Concise Review</a></li>
+<li><a href="https://arxiv.org/abs/1512.02363">Forster et al., On-Manifold Preintegration</a></li>
+<li><a href="https://intra.ece.ucr.edu/~mourikis/papers/MourikisRoumeliotis-ICRA07.pdf">Mourikis &amp; Roumeliotis 2007, MSCKF</a></li>
+<li>Barfoot, <a href="https://asrl.utias.utoronto.ca/~tdb/bib/barfoot_ser24.pdf">State Estimation for Robotics</a> — the textbook.</li>
+<li>Dellaert &amp; Kaess, <a href="https://www.cc.gatech.edu/~dellaert/pubs/Dellaert17fnt.pdf">Factor Graphs for Robot Perception</a></li>
+</ul>
+<p>Code and docs:</p>
+<ul>
+<li><a href="https://docs.openvins.com/">OpenVINS documentation</a> — best practical MSCKF walkthrough alongside working code.</li>
+<li><a href="https://github.com/ethz-asl/kalibr">Kalibr</a>, <a href="https://github.com/ori-drs/allan_variance_ros">allan_variance_ros</a> — calibration and IMU characterization.</li>
+<li><a href="https://gtsam.org/">GTSAM</a> and the companion <a href="https://www.roboticsbook.org/">gtbook</a> course.</li>
+<li><a href="https://github.com/MichaelGrupp/evo">evo</a> — trajectory evaluation.</li>
+<li><a href="https://github.com/ethz-asl/voxblox">voxblox</a>, <a href="https://github.com/nvidia-isaac/nvblox">nvblox</a>, <a href="https://octomap.github.io/">OctoMap</a> — dense mapping.</li>
+<li><a href="https://docs.px4.io/main/en/ros/external_position_estimation.html">PX4 external position estimation guide</a> — the ODOMETRY/EKF2 integration contract.</li>
+</ul>
+<p>Related notes: <a href="./voxl2_mini.html">VOXL 2 Mini</a> for the shipped qVIO/voxblox stack, <a href="./pixhawk_ecosystem.html">the Pixhawk ecosystem</a> for the flight-stack side of the interface, <a href="./ros.html">ROS, from zero</a> for tf2/REP-105 machinery, and <a href="./autonomous_drone_navigation.html">autonomous drone navigation</a> for what gets built on top.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/xl0\.github\.io\/exploring-edge-perf");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

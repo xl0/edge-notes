@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>ModalAI VOXL 2 Mini research notes – exploring-edge-perf</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-d63a2c9c8df14b07662b36303925c8cc.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="ModalAI VOXL 2 Mini research notes – exploring-edge-perf">
+<meta property="og:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta property="og:site_name" content="exploring-edge-perf">
+<meta name="twitter:title" content="ModalAI VOXL 2 Mini research notes – exploring-edge-perf">
+<meta name="twitter:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta name="twitter:creator" content="@xl0xl0xl0">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">exploring-edge-perf</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="http://github.com/xl0/edge-notes"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/xl0xl0xl0"> <i class="bi bi-twitter" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./voxl2_mini.html">ModalAI VOXL 2 Mini research notes</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Research notebooks</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./edge_llm_tps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Theoretical LLM TPS on IQ-9075, Jetson, and NVIDIA GPUs</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./3d_photo_reconstruction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">3D photo reconstruction / indoor navigation research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autonomous_drone_navigation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Autonomous indoor drone navigation / capture research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04_ref_matrials.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">04_ref_matrials.html</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./nvidia_isaac_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NVIDIA Isaac ecosystem research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./voxl2_mini.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">ModalAI VOXL 2 Mini research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./flight_compute_landscape.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Flight compute and competing ecosystems</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modalai_modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI module reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pixhawk_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Pixhawk ecosystem</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ros.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ROS, from zero</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./vio_slam.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIO and SLAM</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./navigation_exploration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Navigation and exploration</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./platforms.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Drone platforms</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#hardware-at-a-glance" id="toc-hardware-at-a-glance" class="nav-link active" data-scroll-target="#hardware-at-a-glance">Hardware at a glance</a>
+  <ul class="collapse">
+  <li><a href="#mini-vs-full-size-voxl-2" id="toc-mini-vs-full-size-voxl-2" class="nav-link" data-scroll-target="#mini-vs-full-size-voxl-2">Mini vs full-size VOXL 2</a></li>
+  <li><a href="#the-flight-controller-is-a-dsp-core-not-a-chip" id="toc-the-flight-controller-is-a-dsp-core-not-a-chip" class="nav-link" data-scroll-target="#the-flight-controller-is-a-dsp-core-not-a-chip">The flight controller is a DSP core, not a chip</a></li>
+  </ul></li>
+  <li><a href="#cameras-and-sensors" id="toc-cameras-and-sensors" class="nav-link" data-scroll-target="#cameras-and-sensors">Cameras and sensors</a>
+  <ul class="collapse">
+  <li><a href="#tof-vs-lidar" id="toc-tof-vs-lidar" class="nav-link" data-scroll-target="#tof-vs-lidar">ToF vs lidar</a></li>
+  <li><a href="#two-consequences-for-capture" id="toc-two-consequences-for-capture" class="nav-link" data-scroll-target="#two-consequences-for-capture">Two consequences for capture</a></li>
+  </ul></li>
+  <li><a href="#io-and-connectors" id="toc-io-and-connectors" class="nav-link" data-scroll-target="#io-and-connectors">I/O and connectors</a>
+  <ul class="collapse">
+  <li><a href="#power-and-motors" id="toc-power-and-motors" class="nav-link" data-scroll-target="#power-and-motors">Power and motors</a></li>
+  <li><a href="#offboard-sensors" id="toc-offboard-sensors" class="nav-link" data-scroll-target="#offboard-sensors">Offboard sensors</a></li>
+  </ul></li>
+  <li><a href="#the-ecosystem-around-the-board" id="toc-the-ecosystem-around-the-board" class="nav-link" data-scroll-target="#the-ecosystem-around-the-board">The ecosystem around the board</a>
+  <ul class="collapse">
+  <li><a href="#compute-boards" id="toc-compute-boards" class="nav-link" data-scroll-target="#compute-boards">Compute boards</a></li>
+  <li><a href="#image-sensors-and-the-flex-chain" id="toc-image-sensors-and-the-flex-chain" class="nav-link" data-scroll-target="#image-sensors-and-the-flex-chain">Image sensors and the flex chain</a></li>
+  <li><a href="#escs-and-the-missing-pwm" id="toc-escs-and-the-missing-pwm" class="nav-link" data-scroll-target="#escs-and-the-missing-pwm">ESCs and the missing PWM</a></li>
+  <li><a href="#power-radios-breakouts" id="toc-power-radios-breakouts" class="nav-link" data-scroll-target="#power-radios-breakouts">Power, radios, breakouts</a></li>
+  <li><a href="#finished-vehicles-and-kits" id="toc-finished-vehicles-and-kits" class="nav-link" data-scroll-target="#finished-vehicles-and-kits">Finished vehicles and kits</a></li>
+  <li><a href="#what-it-costs-to-build" id="toc-what-it-costs-to-build" class="nav-link" data-scroll-target="#what-it-costs-to-build">What it costs to build</a></li>
+  <li><a href="#what-the-ecosystem-implies" id="toc-what-the-ecosystem-implies" class="nav-link" data-scroll-target="#what-the-ecosystem-implies">What the ecosystem implies</a></li>
+  </ul></li>
+  <li><a href="#software-voxl-sdk" id="toc-software-voxl-sdk" class="nav-link" data-scroll-target="#software-voxl-sdk">Software: VOXL SDK</a>
+  <ul class="collapse">
+  <li><a href="#details-worth-keeping-in-mind" id="toc-details-worth-keeping-in-mind" class="nav-link" data-scroll-target="#details-worth-keeping-in-mind">Details worth keeping in mind</a></li>
+  <li><a href="#ros-and-cross-development" id="toc-ros-and-cross-development" class="nav-link" data-scroll-target="#ros-and-cross-development">ROS and cross-development</a></li>
+  </ul></li>
+  <li><a href="#what-the-source-tree-shows" id="toc-what-the-source-tree-shows" class="nav-link" data-scroll-target="#what-the-source-tree-shows">What the source tree shows</a></li>
+  <li><a href="#bridging-the-board-to-simulation" id="toc-bridging-the-board-to-simulation" class="nav-link" data-scroll-target="#bridging-the-board-to-simulation">Bridging the board to simulation</a>
+  <ul class="collapse">
+  <li><a href="#px4-hitl-documented-works-today" id="toc-px4-hitl-documented-works-today" class="nav-link" data-scroll-target="#px4-hitl-documented-works-today">1. PX4 HITL — documented, works today</a></li>
+  <li><a href="#simulated-vio-into-the-real-stack-also-shipped" id="toc-simulated-vio-into-the-real-stack-also-shipped" class="nav-link" data-scroll-target="#simulated-vio-into-the-real-stack-also-shipped">2. Simulated VIO into the real stack — also shipped</a></li>
+  <li><a href="#simulated-imagery-into-the-perception-stack-custom" id="toc-simulated-imagery-into-the-perception-stack-custom" class="nav-link" data-scroll-target="#simulated-imagery-into-the-perception-stack-custom">3. Simulated imagery into the perception stack — custom</a></li>
+  <li><a href="#recommended-ladder" id="toc-recommended-ladder" class="nav-link" data-scroll-target="#recommended-ladder">Recommended ladder</a></li>
+  </ul></li>
+  <li><a href="#running-the-stack-on-the-host-software-in-the-loop" id="toc-running-the-stack-on-the-host-software-in-the-loop" class="nav-link" data-scroll-target="#running-the-stack-on-the-host-software-in-the-loop">Running the stack on the host (software in the loop)</a>
+  <ul class="collapse">
+  <li><a href="#expectation-vs-reality" id="toc-expectation-vs-reality" class="nav-link" data-scroll-target="#expectation-vs-reality">Expectation vs reality</a></li>
+  <li><a href="#the-bridge-verified" id="toc-the-bridge-verified" class="nav-link" data-scroll-target="#the-bridge-verified">The bridge, verified</a></li>
+  <li><a href="#practical-gotchas-when-reproducing-this" id="toc-practical-gotchas-when-reproducing-this" class="nav-link" data-scroll-target="#practical-gotchas-when-reproducing-this">Practical gotchas when reproducing this</a></li>
+  <li><a href="#bugs-worth-reporting-upstream" id="toc-bugs-worth-reporting-upstream" class="nav-link" data-scroll-target="#bugs-worth-reporting-upstream">Bugs worth reporting upstream</a></li>
+  </ul></li>
+  <li><a href="#what-the-autonomy-stack-already-does" id="toc-what-the-autonomy-stack-already-does" class="nav-link" data-scroll-target="#what-the-autonomy-stack-already-does">What the autonomy stack already does</a></li>
+  <li><a href="#onboard-ai-compute-realistically" id="toc-onboard-ai-compute-realistically" class="nav-link" data-scroll-target="#onboard-ai-compute-realistically">Onboard AI compute, realistically</a></li>
+  <li><a href="#what-is-provided-and-what-is-missing" id="toc-what-is-provided-and-what-is-missing" class="nav-link" data-scroll-target="#what-is-provided-and-what-is-missing">What is provided, and what is missing</a>
+  <ul class="collapse">
+  <li><a href="#integration-surface" id="toc-integration-surface" class="nav-link" data-scroll-target="#integration-surface">Integration surface</a></li>
+  </ul></li>
+  <li><a href="#risks-and-caveats" id="toc-risks-and-caveats" class="nav-link" data-scroll-target="#risks-and-caveats">Risks and caveats</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content column-page-right" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">ModalAI VOXL 2 Mini research notes</h1>
+</div>
+
+
+
+<div class="quarto-title-meta column-page-right">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<p>Scope: what the VOXL 2 Mini provides out of the box, what it cannot do, and where an indoor autonomous-capture stack has to attach.</p>
+<p>Core take: <strong>the Mini is a 42 x 42 mm, 11 g board that is both the companion computer and the flight controller, and it already ships a working indoor autonomy stack</strong>:</p>
+<ul>
+<li>visual-inertial odometry (VIO),</li>
+<li>stereo and time-of-flight (ToF) depth,</li>
+<li>truncated / Euclidean <a href="https://en.wikipedia.org/wiki/Signed_distance_function">signed distance field</a> (TSDF / ESDF) mapping,</li>
+<li><a href="https://en.wikipedia.org/wiki/Rapidly_exploring_random_tree">rapidly-exploring random tree</a> (RRT*) planning with trajectory optimization,</li>
+<li><a href="https://px4.io/">PX4</a> collision prevention.</li>
+</ul>
+<p>What it does <em>not</em> ship is any notion of <em>where to go next</em>: no exploration policy, no next-best-view, no coverage or photo-quality metric. That gap is the subject of the <a href="https://xiao-chen.tech/gleam/">GLEAM</a> / <a href="https://shiyao-li.github.io/nbp/">Next-Best-Path</a> (NBP) line of work, and it sits off-board.</p>
+<p>Prices as of 2026-07:</p>
+<ul>
+<li>$1,249.99 board only,</li>
+<li>$1,349.99 with power module,</li>
+<li>$1,449.99 with VOXL electronic speed controller (ESC) Mini,</li>
+<li><a href="https://www.modalai.com/products/voxl-2-mini">product page</a>, <a href="https://docs.modalai.com/voxl2-mini/">docs</a>.</li>
+</ul>
+<p>Assembled in USA, which is most of why the price looks the way it does — see the bill-of-materials estimate below.</p>
+<section id="hardware-at-a-glance" class="level2">
+<h2 class="anchored" data-anchor-id="hardware-at-a-glance">Hardware at a glance</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Item</th>
+<th>VOXL 2 Mini</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Size / weight</td>
+<td>42 x 42 mm, 11 g, 30.5 mm mount pattern</td>
+</tr>
+<tr class="even">
+<td>SoC</td>
+<td><a href="https://www.qualcomm.com/products/internet-of-things/industrial/industrial-automation/qrb5165">Qualcomm QRB5165</a>, 8 cores to 3.091 GHz</td>
+</tr>
+<tr class="odd">
+<td>RAM / flash</td>
+<td>8 GB LPDDR5 / 128 GB</td>
+</tr>
+<tr class="even">
+<td>GPU</td>
+<td><a href="https://en.wikipedia.org/wiki/Adreno">Adreno 650</a>, 1024 ALUs</td>
+</tr>
+<tr class="odd">
+<td>NPU</td>
+<td><a href="https://en.wikipedia.org/wiki/Qualcomm_Hexagon">Hexagon</a>, ~15 TOPS</td>
+</tr>
+<tr class="even">
+<td>Cameras</td>
+<td>4 concurrent <a href="https://www.mipi.org/specifications/csi-2">MIPI-CSI2</a> lanes</td>
+</tr>
+<tr class="odd">
+<td>Video</td>
+<td>8K30 h.264/h.265 encode, up to 108 MP stills</td>
+</tr>
+<tr class="even">
+<td>IMU / baro</td>
+<td>2x <a href="https://invensense.tdk.com/products/motion-tracking/6-axis/icm-42688-p/">TDK ICM-42688-P</a> / <a href="https://invensense.tdk.com/products/icp-10111/">ICP-10111</a></td>
+</tr>
+<tr class="odd">
+<td>Flight controller</td>
+<td><a href="https://px4.io/">PX4</a> 1.14 or <a href="https://ardupilot.org/">ArduPilot</a> 4.6+, on the sensor DSP</td>
+</tr>
+<tr class="even">
+<td>Power</td>
+<td>3.8 VDC in, 0.5-8 W</td>
+</tr>
+<tr class="odd">
+<td>Radio</td>
+<td>none onboard; WiFi / 5G / LTE / Microhard as add-ons</td>
+</tr>
+</tbody>
+</table>
+<p>Terms: SoC = system on chip, ALU = arithmetic logic unit, NPU = neural processing unit, TOPS = tera-operations per second, MIPI-CSI2 = camera serial interface, IMU = inertial measurement unit, DSP = digital signal processor.</p>
+<section id="mini-vs-full-size-voxl-2" class="level3">
+<h3 class="anchored" data-anchor-id="mini-vs-full-size-voxl-2">Mini vs full-size VOXL 2</h3>
+<p>The QRB5165 is the robotics variant of the <a href="https://en.wikipedia.org/wiki/Qualcomm_Snapdragon">Snapdragon 865</a>; Qualcomm’s <a href="https://www.qualcomm.com/content/dam/qcomm-martech/dm-assets/documents/qualcomm-robotics-rb5-platform-product-brief.pdf">Robotics RB5 platform</a> is the reference design it comes from. The flight controller runs on one of its DSP subsystems, not on a separate microcontroller — the next section unpacks that.</p>
+<p>Differences vs the full-size VOXL 2:</p>
+<ul>
+<li>42 x 42 mm / 11 g vs 70 x 36 mm / 16 g.</li>
+<li>4 concurrent camera lanes vs 6.</li>
+<li>3.8 V input vs 5 V.</li>
+<li>ArduPilot documented alongside PX4.</li>
+</ul>
+<p>Everything else — SoC, RAM, flash, GPU, NPU, encode, IMUs — is identical. The Mini is not cut-down compute; the differences are mechanical and I/O.</p>
+</section>
+<section id="the-flight-controller-is-a-dsp-core-not-a-chip" class="level3">
+<h3 class="anchored" data-anchor-id="the-flight-controller-is-a-dsp-core-not-a-chip">The flight controller is a DSP core, not a chip</h3>
+<p>The QRB5165 is a heterogeneous SoC: eight ARM (Kryo 585) cores running Ubuntu, the Adreno GPU, a compute DSP (cDSP — the “NPU” in the spec table), and the <strong>SLPI (sensor low-power island)</strong> — a Hexagon DSP subsystem that phones use for always-on sensor fusion. ModalAI runs the entire flight controller there (their docs call it the sensors DSP, SDSP). PX4 executes under <a href="https://docs.modalai.com/voxl-px4-system-architecture/">QuRT</a>, Qualcomm’s real-time OS for Hexagon, with its own scheduler and memory space; the board’s IMUs and barometer are wired to SLPI-owned SPI/I2C buses, so the control loop never crosses into Linux. PX4 itself is deliberately split: everything flight-critical runs on the DSP, while its support tasks — logging, MAVLink processing — run as a companion process on the ARM cores.</p>
+<p>What this buys and costs, versus a separate flight-controller MCU:</p>
+<ul>
+<li><strong>Real isolation, shared package.</strong> The DSP keeps stabilizing through Linux-side CPU load, service crashes, even a userspace lockup — the practical failure containment a separate STM32 gives. What it does not survive is what a separate chip would: whole-SoC events (power, thermal shutdown, kernel-triggered subsystem resets) take the autopilot down with the computer.</li>
+<li><strong>The bridge is <a href="https://docs.px4.io/main/en/middleware/uorb.html">muORB</a></strong>: PX4’s internal uORB pub/sub, extended across the DSP↔︎Linux boundary over Qualcomm’s FastRPC shared-memory transport. Linux-side services (<code>voxl-px4</code> companion process, <code>voxl-mavlink-server</code>, and through it <a href="#software-voxl-sdk">qVIO and the rest of the SDK</a>) see the autopilot’s topics without a serial link — the same role a UART+MAVLink hop plays on a <a href="./flight_compute_landscape.html#the-split-stack-pixhawk-fc-separate-computer">Pixhawk-style split stack</a>, at shared-memory latency.</li>
+<li><strong>Toolchain lock-in.</strong> Code on the SLPI is built with Qualcomm’s proprietary Hexagon SDK, so <a href="https://gitlab.com/voxl-public/voxl-px4/voxl-px4"><code>voxl-px4</code></a> is ModalAI’s fork built in their docker environment — you cannot flash an upstream PX4 release, and the shipped version trails upstream (1.14 in SDK 1.6). ArduPilot took the same path but upstream: its <a href="https://ardupilot.org/copter/docs/common-modalai-voxl2.html">QuRT HAL</a> is mainlined, which is why current ArduPilot is documented on the Mini.</li>
+<li><strong>I/O follows the SoC.</strong> No timer-driven PWM pads — hence <a href="#escs-and-the-missing-pwm">UART/serial ESCs only</a> — and no SWD-style debug probe into the DSP: flight-side debugging is logs, the PX4 shell over adb, and muORB topic inspection.</li>
+<li><strong>History note</strong>: this replaced a real two-chip design — VOXL 1 paired with the STM32F7-based Flight Core (“VOXL Flight” when combined on one PCB). VOXL 2 moved the autopilot on-die and dropped the MCU.</li>
+</ul>
+</section>
+</section>
+<section id="cameras-and-sensors" class="level2">
+<h2 class="anchored" data-anchor-id="cameras-and-sensors">Cameras and sensors</h2>
+<p>Concurrency caps on the Mini: <strong>4 tracking, or 2 ToF, or 2 hires (high-resolution)</strong> sensors across the 4 camera ports, mixed via interposer boards M0076 / M0084 / M0135.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Role</th>
+<th>Sensor</th>
+<th>Shutter</th>
+<th>Modules</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Tracking (VIO)</td>
+<td><a href="https://www.ovt.com/products/ov7251/">OV7251</a>, <a href="https://www.onsemi.com/products/sensors/image-sensors/ar0144">AR0144</a></td>
+<td>global</td>
+<td><a href="https://docs.modalai.com/M0014/">M0014</a>, <a href="https://docs.modalai.com/M0072/">M0072</a>, <a href="https://docs.modalai.com/M0166/">M0166</a>, <a href="https://docs.modalai.com/M0149/">M0149</a></td>
+</tr>
+<tr class="even">
+<td>Stereo</td>
+<td>OV7251, <a href="https://www.ovt.com/products/ov9782/">OV9782</a></td>
+<td>global</td>
+<td><a href="https://docs.modalai.com/M0015/">M0015</a>, <a href="https://docs.modalai.com/M0073/">M0073</a>, <a href="https://docs.modalai.com/M0113/">M0113</a></td>
+</tr>
+<tr class="odd">
+<td>Hires</td>
+<td>Sony IMX214/412/678/664</td>
+<td><strong>rolling</strong></td>
+<td><a href="https://docs.modalai.com/M0024/">M0024</a>, <a href="https://docs.modalai.com/M0025/">M0025</a>, <a href="https://docs.modalai.com/M0107/">M0107</a>, <a href="https://docs.modalai.com/M0161/">M0161</a>, M0143, <a href="https://docs.modalai.com/M0186/">M0186</a></td>
+</tr>
+<tr class="even">
+<td>ToF</td>
+<td><a href="https://3d.pmdtec.com/en/">PMD</a> IRS1645, IRS2975C</td>
+<td>-</td>
+<td><a href="https://docs.modalai.com/M0040/">M0040</a>, <a href="https://docs.modalai.com/M0169/">M0169</a>, <a href="https://docs.modalai.com/M0178/">M0178</a></td>
+</tr>
+<tr class="odd">
+<td>Thermal</td>
+<td>FLIR <a href="https://docs.modalai.com/voxl-lepton-server/">Lepton</a> 3.5 / Boson</td>
+<td>-</td>
+<td>I2C + SPI adapter</td>
+</tr>
+<tr class="even">
+<td>Rangefinder</td>
+<td><a href="https://docs.modalai.com/rangefinders/">VL53L1X / VL53L1CX</a></td>
+<td>-</td>
+<td>I2C</td>
+</tr>
+</tbody>
+</table>
+<p>Every module above except M0143 has a datasheet page at <code>docs.modalai.com/&lt;part number&gt;/</code>; the interposers and flexes below follow the same pattern. The <a href="https://docs.modalai.com/pcb-catalog/">PCB catalog</a> is the index, though it lags the per-board pages.</p>
+<p>What each role is for:</p>
+<ul>
+<li>Tracking: mono fisheye (~167 deg) — the VIO input.</li>
+<li>Stereo: mono pairs — depth-from-stereo.</li>
+<li>Hires: the photogrammetry path.</li>
+<li>ToF: primary depth input to <code>voxl-mapper</code>.</li>
+<li>Rangefinder: altitude only.</li>
+</ul>
+<p>Buses: I2C = inter-integrated circuit, SPI = serial peripheral interface.</p>
+<p><img src="https://docs.modalai.com/images/voxl2-mini/m0104-image-sensors-config.jpg" alt="Supported image sensor configurations on the VOXL 2 Mini" width="70%"></p>
+<section id="tof-vs-lidar" class="level3">
+<h3 class="anchored" data-anchor-id="tof-vs-lidar">ToF vs lidar</h3>
+<p>Same physics family, different engineering, different data product:</p>
+<ul>
+<li>The PMD modules are <strong>indirect ToF flash cameras</strong>. A flood illuminator lights the whole scene and every pixel measures the phase shift of the modulated return, giving a dense but low-resolution depth image. Short range (a few metres indoors), weak in sunlight, poor on dark or specular surfaces, and prone to multipath error in corners.</li>
+<li><strong>Lidar</strong> normally means <strong>direct ToF</strong>: a pulsed laser timed against a single-photon detector, scanned or flash-illuminated. Sparse returns, but tens to hundreds of metres, sunlight-robust, cm-accurate.</li>
+<li>The VL53L1X rangefinder is direct ToF as well — effectively a single-pixel lidar.</li>
+</ul>
+<p>For indoor mapping the ToF camera is the better data product: dense depth, cheap, small. For large or sunlit spaces it degrades badly, and that is where lidar would be wanted — which the Mini does not natively support.</p>
+</section>
+<section id="two-consequences-for-capture" class="level3">
+<h3 class="anchored" data-anchor-id="two-consequences-for-capture">Two consequences for capture</h3>
+<ul>
+<li><p><strong>Every high-resolution sensor is rolling shutter.</strong> Global shutter exists only on the low-resolution mono computer-vision (CV) cameras. For photogrammetry that means motion blur and rolling-shutter skew unless the vehicle flies slowly or stops to shoot at capture poses. A capture-policy constraint, not a software one.</p></li>
+<li><p><strong>Per camera, QRB5165 can configure only three image outputs at once.</strong> <a href="https://source.android.com/docs/core/camera/camera3">HAL3</a> is Android’s camera hardware abstraction layer: the interface between Qualcomm’s sensor/ISP stack and <code>voxl-camera-server</code>. We use it indirectly whenever a MIPI camera is used, but applications normally consume Modal Pipe Architecture (MPA) pipes rather than call HAL3 themselves. <code>preview</code>, <code>small_video</code>, <code>large_video</code>, and <code>snapshot</code> are ModalAI’s four camera-server profiles, not four stream types defined by HAL3:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Profile</th>
+<th>Intended output</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>preview</code></td>
+<td>Low-latency RAW8/NV12 frames for CV</td>
+</tr>
+<tr class="even">
+<td><code>small_video</code></td>
+<td>Lower-resolution H.264/H.265 for FPV/RTSP</td>
+</tr>
+<tr class="odd">
+<td><code>large_video</code></td>
+<td>High-resolution H.264/H.265 for recording</td>
+</tr>
+<tr class="even">
+<td><code>snapshot</code></td>
+<td>On-demand, ISP-processed JPEG</td>
+</tr>
+</tbody>
+</table>
+<p>A hires camera normally spends its three slots on small video, large video, and snapshots; adding an uncompressed CV preview requires disabling one. This is usually acceptable here because qVIO consumes preview frames from a separate tracking camera while the hires camera handles capture. Multiple programs can also subscribe to the same MPA output without consuming another HAL3 slot. The hard limitation is therefore four <em>distinct native outputs</em> from one sensor, not necessarily four downstream uses if an output can be shared or derived.</p></li>
+</ul>
+</section>
+</section>
+<section id="io-and-connectors" class="level2">
+<h2 class="anchored" data-anchor-id="io-and-connectors">I/O and connectors</h2>
+<p><img src="https://docs.modalai.com/images/voxl2-mini/m0104-datasheets-connectors-v2.jpg" alt="VOXL 2 Mini connector locations, top and bottom" width="70%"></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Connector</th>
+<th>Function</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>J1</td>
+<td>3.8 V DC power in + I2C battery monitoring (6 A inrush)</td>
+</tr>
+<tr class="even">
+<td>J2</td>
+<td>5 V fan output, PWM controlled</td>
+</tr>
+<tr class="odd">
+<td>J3</td>
+<td>USB3 SuperSpeed, 900 mA VBUS</td>
+</tr>
+<tr class="even">
+<td>J4</td>
+<td>serial debug console (debug kernel builds only)</td>
+</tr>
+<tr class="odd">
+<td>J6 / J7</td>
+<td>camera group 0 / 1: 2x 4-lane MIPI CSI, CCI, 8 power rails</td>
+</tr>
+<tr class="even">
+<td>J9</td>
+<td>USB-C: ADB, OTG / host</td>
+</tr>
+<tr class="odd">
+<td>J10</td>
+<td>UART or SPI expansion (2 chip selects), 3.3 V</td>
+</tr>
+<tr class="even">
+<td>J19</td>
+<td>2x UART + 2x I2C: RC receiver, ESC, GNSS, magnetometer</td>
+</tr>
+</tbody>
+</table>
+<p>Terms: PWM = pulse-width modulation, CCI = camera control interface, ADB = Android Debug Bridge, OTG = USB on-the-go, UART = universal asynchronous receiver/transmitter, RC = radio control, GNSS = global navigation satellite system.</p>
+<section id="power-and-motors" class="level3">
+<h3 class="anchored" data-anchor-id="power-and-motors">Power and motors</h3>
+<p>Power is the integration gotcha: the Mini wants <strong>3.8 V</strong>, not 5 V. Two supported sources:</p>
+<ul>
+<li><a href="https://www.modalai.com/products/mdk-m0041-1?variant=44759397073200"><code>MDK-M0041-4-00</code></a> Power Module v3 — 2S-6S LiPo in on XT60, fixed 3.8 V out, two INA231 current monitors on I2C.</li>
+<li><a href="https://docs.modalai.com/voxl-mini-esc-datasheet/">M0129 VOXL Mini 4-in-1 ESC</a> — use the fixed-3.8 V <code>M0129-63</code> (current 2S-6S hardware), sold as <code>MDK-M0129-63-00</code> without accessory cables or <code>-01</code> with them. It reports battery telemetry over UART on J19 instead.</li>
+</ul>
+<p><code>M0041</code> is the correct board-family number, not <code>M00041</code>. ModalAI’s Mini guide shortens the required variant to <code>MDK-M0041-4</code>; the full current orderable SKU is <code>MDK-M0041-4-00</code>. The generic Power Module v3 datasheet is stale: its part-number table lists only older 5 V assemblies, while the Mini guide and store listing confirm this 3.8 V variant.</p>
+<p>There is also <strong>no PWM output</strong> for motors: the QRB5165 has none, so ESCs talk UART, or you add the VOXL 2 IO board. See the ecosystem section below.</p>
+</section>
+<section id="offboard-sensors" class="level3">
+<h3 class="anchored" data-anchor-id="offboard-sensors">Offboard sensors</h3>
+<p>Documented on the Mini:</p>
+<ul>
+<li>GNSS — UART on J19 (SSC_QUP6).</li>
+<li>Magnetometer — I2C on J19 (SSC_QUP0).</li>
+<li>Power monitoring — I2C on J1.</li>
+<li>Rangefinder — I2C.</li>
+</ul>
+<p>Notably <strong>no documented UART lidar support</strong>. A spinning or solid-state lidar would mean USB3 or a custom UART bring-up, not a supported path.</p>
+</section>
+</section>
+<section id="the-ecosystem-around-the-board" class="level2">
+<h2 class="anchored" data-anchor-id="the-ecosystem-around-the-board">The ecosystem around the board</h2>
+<p>The Mini is one stock-keeping unit in a vertically integrated catalogue. ModalAI sells the compute, the sensors, the flexes that connect them, the ESCs, the power modules, the radios, and finished drones — and the software assumes their parts. Buying a bare board is rarely what you actually want.</p>
+<p><img src="https://docs.modalai.com/images/voxl2-mini/m0104-hand-hero.jpg" alt="VOXL 2 Mini board held in a hand" width="55%"></p>
+<section id="compute-boards" class="level3">
+<h3 class="anchored" data-anchor-id="compute-boards">Compute boards</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Board</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/m0054-versions/">M0054</a> / M0154</td>
+<td><a href="https://www.modalai.com/products/voxl-2">VOXL 2</a>, full size, 6 camera lanes, from $1,299.99</td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/voxl2-mini-datasheets/">M0104</a></td>
+<td><a href="https://www.modalai.com/products/voxl-2-mini">VOXL 2 Mini</a>, 4 camera lanes, from $1,249.99</td>
+</tr>
+<tr class="odd">
+<td>M0204</td>
+<td>VOXL 2 Mini refresh (no doc page yet)</td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/flight-core-v2-datasheets/">M0087</a></td>
+<td>Flight Core v2 — standalone STM32 autopilot, no compute</td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/voxl-datasheets/">M0006</a> / <a href="https://docs.modalai.com/voxl-flight-datasheet/">M0019</a></td>
+<td>VOXL 1 and VOXL Flight, previous generation</td>
+</tr>
+</tbody>
+</table>
+<p>SDK 1.6 also lists MVX-* boards (MM0204-1, M0205-1, M0206-1) and QCS6490 support as supported platforms — the next hardware generation is already in the tree.</p>
+</section>
+<section id="image-sensors-and-the-flex-chain" class="level3">
+<h3 class="anchored" data-anchor-id="image-sensors-and-the-flex-chain">Image sensors and the flex chain</h3>
+<p><img src="https://docs.modalai.com/images/other-products/image-sensors/image_sensors.jpg" alt="ModalAI image sensor module family" width="70%"></p>
+<p>A sensor never plugs straight into the board. The chain is sensor module -&gt; flex cable -&gt; interposer -&gt; J6/J7:</p>
+<ul>
+<li>Interposers: <a href="https://docs.modalai.com/m0076/">M0076</a> (DF40C to AXT), <a href="https://docs.modalai.com/M0084/">M0084</a> (Y-AXT, two sensors per port), <a href="https://docs.modalai.com/M0135/">M0135</a> (dual image sensor adapter), <a href="https://docs.modalai.com/M0195/">M0195</a> (Mini / Stinger).</li>
+<li>Thermal adapters: <a href="https://docs.modalai.com/M0187/">M0187</a> (Lepton), <a href="https://docs.modalai.com/M0153/">M0153</a> (Boson).</li>
+<li>ToF adapters: <a href="https://docs.modalai.com/M0172/">M0172</a>, <a href="https://docs.modalai.com/M0178/">M0178</a> (high power), <a href="https://docs.modalai.com/M0189/">M0189</a> (Mini-specific).</li>
+<li>Extension flexes in fixed lengths (<a href="https://docs.modalai.com/M0036/">M0036</a>, <a href="https://docs.modalai.com/M0074/">M0074</a>), stereo flexes with fixed baselines (<a href="https://docs.modalai.com/M0010/">M0010</a>, <a href="https://docs.modalai.com/M0039/">M0039</a>).</li>
+</ul>
+<p>The mechanical layout of a build is largely decided by which flexes exist. Custom baselines or camera placements mean custom flex, not just a config file.</p>
+<p>Full part-number lookup with weights and datasheet links: <a href="./modalai_modules.html">ModalAI module reference</a>.</p>
+</section>
+<section id="escs-and-the-missing-pwm" class="level3">
+<h3 class="anchored" data-anchor-id="escs-and-the-missing-pwm">ESCs and the missing PWM</h3>
+<p><strong>The QRB5165 has no PWM output.</strong> This shapes every build:</p>
+<ul>
+<li>UART ESCs are the native path: <a href="https://docs.modalai.com/voxl-mini-esc-datasheet/">M0129</a> (Mini 4-in-1, pairs with the Mini over J19), <a href="https://docs.modalai.com/voxl-esc-datasheet/">M0049 / M0117 / M0134</a> (4-in-1, up to 32 A), <a href="https://docs.modalai.com/voxl-fpv-esc-datasheet/">M0138</a> (FPV 4-in-1). See the <a href="https://docs.modalai.com/voxl2-mini-esc-configs/">Mini ESC configs</a>.</li>
+<li>For PWM ESCs you add the <a href="https://docs.modalai.com/voxl2-io-user-guide/">VOXL 2 IO board</a>, which speaks the PX4IO protocol — and therefore does <strong>not</strong> support DShot.</li>
+<li>The M0129 also feeds the Mini its 3.8 V and reports battery telemetry over the same UART.</li>
+</ul>
+<p><img src="https://docs.modalai.com/images/voxl2-mini/m0104-m0129.jpg" alt="VOXL 2 Mini connected to the M0129 Mini 4-in-1 ESC" width="60%"></p>
+</section>
+<section id="power-radios-breakouts" class="level3">
+<h3 class="anchored" data-anchor-id="power-radios-breakouts">Power, radios, breakouts</h3>
+<ul>
+<li>Power modules: <a href="https://docs.modalai.com/power-module-v3-datasheet/">M0041 family</a> — the Mini needs the 3.8 V <a href="https://www.modalai.com/products/mdk-m0041-1?variant=44759397073200"><code>MDK-M0041-4-00</code></a>, not a 5 V <code>-1</code> / <code>-5</code> variant.</li>
+<li>Cellular: M0130 LTE add-on with I/O breakout and USB hub (from $249.99), <a href="https://docs.modalai.com/5G-Modem-datasheet/">M0067 / M0090</a> 5G carriers.</li>
+<li>Mesh/datalink: <a href="https://docs.modalai.com/microhard-add-on-datasheet/">M0048 / M0059</a> Microhard ($199.99), Doodle Labs options.</li>
+<li>WiFi: M0136 modules, M0141 WiFi add-on with I/O.</li>
+<li>Video transmit: M0185 dual-band VTX; MSP DisplayPort OSD works with third-party HDZero / Walksnail units.</li>
+<li>Debug and expansion: <a href="https://docs.modalai.com/m0017/">M0017</a> / <a href="https://docs.modalai.com/usb-expander-and-debug-datasheet/">M0078</a> USB debug, <a href="https://docs.modalai.com/m0151/">M0125 / M0151</a> USB3-UART expansion (from $49.99), <a href="https://docs.modalai.com/m0062-datasheet/">M0062</a> and M0144 breakouts, M0022 PWM breakout.</li>
+</ul>
+<p>Full part-number lookup — 85 boards, weights, and verified datasheet links, plus which ones the official catalog is missing — is in <a href="./modalai_modules.html">ModalAI module reference</a>.</p>
+<p>Full part list: the <a href="https://docs.modalai.com/pcb-catalog/">PCB catalog</a> and the <a href="https://www.modalai.com/collections/voxl-add-ons">add-ons store page</a>.</p>
+</section>
+<section id="finished-vehicles-and-kits" class="level3">
+<h3 class="anchored" data-anchor-id="finished-vehicles-and-kits">Finished vehicles and kits</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Product</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://www.modalai.com/products/starling-2">Starling 2</a></td>
+<td>220 mm, 280 g, &gt;40 min flight, from $2,949.99</td>
+</tr>
+<tr class="even">
+<td><a href="https://www.modalai.com/products/starling-2-max">Starling 2 Max</a></td>
+<td>322 mm, 500 g takeoff + 500 g payload, 55+ min, from $3,199.99</td>
+</tr>
+<tr class="odd">
+<td><a href="https://www.modalai.com/pages/sentinel">Sentinel</a></td>
+<td>ModalAI’s reference drone; also sold as flight deck or bare PCB</td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/voxl2-flight-deck/">VOXL 2 Flight Deck</a></td>
+<td>pre-assembled, calibrated compute + sensor kit</td>
+</tr>
+<tr class="odd">
+<td>MDK-M0104-1-C4 / -C6</td>
+<td>Mini sensor development kits</td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/voxl2-mini-d0013/">D0013</a></td>
+<td>Mini reference architecture</td>
+</tr>
+</tbody>
+</table>
+<p>Sensor fits, for reference:</p>
+<ul>
+<li>Starling 2: 3x AR0144 tracking + 1x IMX412 hires.</li>
+<li>Starling 2 Max: 2x AR0144 + 2x IMX412, optional FLIR Lepton, up to $5,799.99 fully equipped.</li>
+<li>MDK-M0104-1-C4: tracking + hires. MDK-M0104-1-C6: ToF + hires + tracking.</li>
+<li>D0013: Mini + M0129 ESC + IMX664 + 2x AR0144 + Lepton + <a href="https://www.expresslrs.org/">ELRS</a> receiver.</li>
+</ul>
+<p><img src="https://docs.modalai.com/images/d0013/CWD-D0013-6-C33-M26-X8-REV7.jpg" alt="D0013 reference build wiring diagram" width="75%"></p>
+<p>Note the Starlings carry the full VOXL 2, not the Mini. There is no ModalAI turnkey drone built on the Mini, so any Mini-based vehicle is an integration job.</p>
+</section>
+<section id="what-it-costs-to-build" class="level3">
+<h3 class="anchored" data-anchor-id="what-it-costs-to-build">What it costs to build</h3>
+<p>Nobody publishes QRB5165 pricing, so the following is inference from teardown-era Snapdragon 865 numbers and distributor kit prices — call it +/-40%. Short version: the Mini plausibly costs <strong>~$350-575 to manufacture</strong>, so $1,249.99 is roughly <strong>2.5-3.5x cost, 60-70% gross margin</strong>. Normal for niche US-assembled robotics hardware, and most of the price is not on the bill of materials.</p>
+<details>
+<summary>
+Bill-of-materials estimate, anchors, and what the margin buys
+</summary>
+<p>Estimated unit cost at ModalAI volume (low thousands per year):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Item</th>
+<th>Est. unit cost</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>QRB5165 SoC</td>
+<td>$120-180</td>
+</tr>
+<tr class="even">
+<td>8 GB LPDDR5</td>
+<td>$45-70</td>
+</tr>
+<tr class="odd">
+<td>128 GB UFS</td>
+<td>$25-40</td>
+</tr>
+<tr class="even">
+<td>PMICs + power tree</td>
+<td>$30-50</td>
+</tr>
+<tr class="odd">
+<td>2x ICM-42688-P + ICP-10111</td>
+<td>$15-25</td>
+</tr>
+<tr class="even">
+<td>Passives, crystals, inductors</td>
+<td>$20-35</td>
+</tr>
+<tr class="odd">
+<td>Connectors (2x DF40C-60, USB-C, 4x JST)</td>
+<td>$15-25</td>
+</tr>
+<tr class="even">
+<td>PCB (42 x 42 mm, ~12-layer HDI, stacked microvias)</td>
+<td>$25-50</td>
+</tr>
+<tr class="odd">
+<td>Shields, thermal, mech</td>
+<td>$5-10</td>
+</tr>
+<tr class="even">
+<td>SMT assembly, test, IMU/baro calibration, yield</td>
+<td>$50-90</td>
+</tr>
+<tr class="odd">
+<td><strong>Total</strong></td>
+<td><strong>~$350-575, midpoint ~$450</strong></td>
+</tr>
+</tbody>
+</table>
+<p>At 10k+/year this would fall to roughly $280-350.</p>
+<p>Anchors behind the range:</p>
+<ul>
+<li>Snapdragon 865 was ~$85 die-only and ~$150 packaged at phone volumes in 2020. QRB5165 is the industrial SKU with 10+ year longevity at a fraction of the volume, so a premium over $85 is expected.</li>
+<li>Thundercomm’s <a href="https://www.arrow.com/en/products/rb5-core-kit/thundercomm.html">RB5 Core Kit</a> — QRB5165 SOM (8 GB / 128 GB) plus a full carrier board — retails $795 at qty 1, $764 at 100+. A finished product with margin at $795 caps how expensive the silicon can plausibly be.</li>
+<li>Memory is abnormally expensive in 2026: LPDDR5X contract prices rose ~90% quarter-on-quarter in Q1, so the memory lines are maybe $40 above their 2024 level.</li>
+</ul>
+<p>What the margin actually buys:</p>
+<ul>
+<li>US assembly in small runs, to defense-procurement standards — a trusted supply chain costs real money.</li>
+<li>The software: VOXL SDK, the PX4-on-DSP port, camera and ISP bring-up. That engineering is amortized over a few thousand boards a year and dwarfs the silicon.</li>
+<li>Qualcomm licensee access — ModalAI builds the sensor-DSP images. That is the moat, and it is not on the BOM.</li>
+<li>Long support life, export paperwork, reseller margin.</li>
+</ul>
+</details>
+</section>
+<section id="what-the-ecosystem-implies" class="level3">
+<h3 class="anchored" data-anchor-id="what-the-ecosystem-implies">What the ecosystem implies</h3>
+<ul>
+<li><strong>Buy a configured kit, not a bare board.</strong> The catalogue is the real product; a board on its own needs an airframe, ESC, flexes, sensors, and a radio before it does anything.</li>
+<li><strong>Sensor choice is catalogue-bounded.</strong> Anything outside the list means camera driver work against a Qualcomm ISP on a 4.19 kernel — expensive, and exactly the kind of task that consumes a research sprint on its own.</li>
+<li><strong>The lock-in is real but honest.</strong> PX4, ArduPilot, ROS 2, and MAVLink are all upstream open standards, so the autonomy work is portable even if the hardware is not.</li>
+<li><strong>Volume pricing exists but will not halve it.</strong> For a deployment that needs compute under ~$500 per vehicle, this platform is the wrong shape — but the obvious alternative got worse in July 2026: NVIDIA raised Jetson prices by 33-101% (Orin Nano Super devkit $249 -&gt; $399, AGX Orin 32 GB module $899 -&gt; $1,799) on memory cost pressure, so a Jetson plus a separate flight controller no longer undercuts an integrated VOXL by much once the FMU, carrier and wiring are counted.</li>
+<li><strong>For a demonstration, the cheapest credible path is a Starling 2</strong> — same SDK, flying, no integration — with the Mini reserved for a later size- or weight-driven build.</li>
+</ul>
+</section>
+</section>
+<section id="software-voxl-sdk" class="level2">
+<h2 class="anchored" data-anchor-id="software-voxl-sdk">Software: VOXL SDK</h2>
+<p>Current release <strong>SDK 1.6.3 (2026-02-06)</strong>, system image 1.8.06, <strong>Ubuntu 18.04 / kernel 4.19</strong> (the store page says “Debian Buster” instead — ModalAI’s own materials disagree; the SDK build targets are <code>qrb5165</code> = Ubuntu 18.04 and <code>qrb5165-2</code> = Ubuntu 20.04). Services talk over ModalAI’s <a href="https://docs.modalai.com/mpa/">Modal Pipe Architecture</a> (MPA) — named pipes under <code>/run/mpa/</code>. Source is on <a href="https://gitlab.com/voxl-public/voxl-sdk">GitLab</a> — but see the licensing note below: it is source-available, not open source.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Service</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/voxl-camera-server/"><code>voxl-camera-server</code></a></td>
+<td>HAL3 access to the Qualcomm ISP, OpenMAX encode</td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/flying-with-vio/"><code>voxl-qvio-server</code></a></td>
+<td>MPA wrapper around Qualcomm <code>mvVISLAM</code>: fisheye + IMU -&gt; 6-DoF pose</td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/voxl-open-vins-server/"><code>voxl-open-vins-server</code></a></td>
+<td><a href="https://docs.openvins.com/">Open-VINS</a>, the open alternative to qVIO</td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/voxl-dfs-server/"><code>voxl-dfs-server</code></a></td>
+<td>depth from stereo: disparity + point cloud pipes</td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/voxl-mapper/"><code>voxl-mapper</code></a></td>
+<td><a href="https://github.com/ethz-asl/voxblox">voxblox</a> TSDF -&gt; ESDF, RRT*, <a href="https://github.com/ethz-asl/mav_trajectory_generation"><code>loco</code></a> trajectory, mesh export</td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/voxl-vision-hub/"><code>voxl-vision-hub</code></a></td>
+<td>VIO -&gt; PX4 bridge, <a href="https://mavlink.io/en/">MAVLink</a>, VOA, <a href="https://april.eecs.umich.edu/software/apriltag">AprilTag</a>, offboard modes</td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/voxl-tflite-server/"><code>voxl-tflite-server</code></a></td>
+<td><a href="https://ai.google.dev/edge/litert">LiteRT</a> inference on CPU / GPU / <a href="https://developer.android.com/ndk/guides/neuralnetworks">NNAPI</a> / NPU delegates</td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/voxl-portal/"><code>voxl-portal</code></a></td>
+<td>web UI: video, 2D costmap, 3D mesh, planning overlays</td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/voxl-streamer/"><code>voxl-streamer</code></a></td>
+<td>RTSP video out</td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/voxl-logger/"><code>voxl-logger</code></a> / <a href="https://docs.modalai.com/voxl-replay/"><code>voxl-replay</code></a></td>
+<td>record and replay MPA pipes</td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/voxl-mavlink-server/"><code>voxl-mavlink-server</code></a></td>
+<td>MAVLink routing to autopilot and ground station</td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/voxl-tag-detector/"><code>voxl-tag-detector</code></a></td>
+<td>AprilTag detection</td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/voxl-lepton-server/"><code>voxl-lepton-server</code></a>, <a href="https://docs.modalai.com/rangefinders/"><code>voxl-rangefinder-server</code></a></td>
+<td>thermal, rangefinder drivers</td>
+</tr>
+</tbody>
+</table>
+<p>Terms: ISP = image signal processor, 6-DoF = six degrees of freedom, VOA = <a href="https://docs.px4.io/main/en/computer_vision/collision_prevention.html">visual obstacle avoidance</a> (PX4 collision prevention), LiteRT = formerly TensorFlow Lite, NNAPI = Android neural networks API, RTSP = real-time streaming protocol.</p>
+<section id="details-worth-keeping-in-mind" class="level3">
+<h3 class="anchored" data-anchor-id="details-worth-keeping-in-mind">Details worth keeping in mind</h3>
+<ul>
+<li><code>voxl-qvio-server</code> is an open MPA wrapper; the VIO itself is Qualcomm’s proprietary <code>libmvVISLAM</code> from the MV SDK. How it is fed and read is open to change; how it estimates is not.</li>
+<li><code>voxl-mapper</code> is beta; needs qVIO + vision-hub; ToF input by default.</li>
+<li><code>voxl-camera-server</code> does NV12/RAW8 preview, h264/h265, JPG snapshot, with either ISP or mean-sample-value (MSV) auto-exposure.</li>
+<li><code>voxl-tflite-server</code> ships YOLOv5, MobileNet-SSD, DeepLabV3, MoveNet, FastDepth.</li>
+<li><code>voxl-vision-hub</code> opens MAVLink UDP ports for MAVROS/MAVSDK — the entry point for an off-board planner.</li>
+</ul>
+</section>
+<section id="ros-and-cross-development" class="level3">
+<h3 class="anchored" data-anchor-id="ros-and-cross-development">ROS and cross-development</h3>
+<p>ROS (Robot Operating System) support:</p>
+<ul>
+<li><strong><a href="https://docs.ros.org/en/foxy/index.html">ROS 2 Foxy</a></strong> as native Debian packages (<code>voxl-ros2-foxy</code>, on disk since SDK 1.1), see the <a href="https://docs.modalai.com/ros2-installation-voxl2/">install guide</a>.</li>
+<li><a href="https://gitlab.com/voxl-public/voxl-sdk/utilities/voxl-mpa-to-ros2"><code>voxl-mpa-to-ros2</code></a> bridges images, IMU, point clouds, VIO pose.</li>
+<li>Anything newer than Foxy runs in Docker.</li>
+<li>The bridge only publishes topics that have subscribers.</li>
+</ul>
+<p>Cross-development uses the <code>voxl-cross</code> Docker image; targets are <code>qrb5165</code> (Ubuntu 18.04) and <code>qrb5165-2</code> (Ubuntu 20.04). CPU, OpenCL GPU, and Hexagon SDK DSP paths are all available.</p>
+</section>
+</section>
+<section id="what-the-source-tree-shows" class="level2">
+<h2 class="anchored" data-anchor-id="what-the-source-tree-shows">What the source tree shows</h2>
+<p>The SDK was cloned locally under <code>voxl/</code> (40 repos, shallow, 2026-07-31; commit manifest in <code>voxl/README.md</code>). Reading it corrects several things the marketing pages imply.</p>
+<p><strong>Licensing is source-available, not open source.</strong> 28 of 33 LICENSE files are BSD-3 with a fourth clause: <em>“The Software is used solely in conjunction with devices provided by ModalAI Inc.”</em> Exceptions: <code>libmodal-pipe</code> and <code>libmodal-json</code> are <strong>LGPL-3.0</strong>, <code>voxl-voxblox</code> keeps ETH-ASL’s BSD, <code>voxl-open-vins-server</code> is an Open-VINS redistribution. Practical effect: the code can be read, patched and extended for a ModalAI-based product, but not lifted onto other hardware.</p>
+<p><strong><code>voxl-qvio-server</code> is a thin wrapper, not the algorithm.</strong> Its README: <em>“MPA service for Qualcomm MV SDK VIO (MVVISLAM)”</em>. The estimator is Qualcomm’s <code>libmvVISLAM</code>; the repo is the pipe plumbing, config, and quality reporting. A quirk worth knowing: on the 18.04 image the MV SDK is 32-bit only, so this is the only 32-bit package on the platform — the 20.04 (<code>qrb5165-2</code>) build is 64-bit.</p>
+<p><strong><code>voxl-mapper</code> vendors the ETH-ASL planning stack.</strong> Under <code>server/</code> sit <code>loco_planner</code>, <code>mav_local_planner</code>, <code>mav_path_smoothing</code>, <code>mav_planning_common</code>, <code>mav_trajectory_generation</code>, <code>voxblox_planning_common</code> — i.e.&nbsp;<code>mav_voxblox_planning</code> de-ROSed onto MPA. Familiar research code, which also means its known limits (2.5D-ish assumptions, replanning cost) are inherited wholesale.</p>
+<p><strong><code>voxl-vision-hub</code> has more offboard modes than the docs advertise.</strong> Source files include <code>offboard_figure_eight</code>, <code>offboard_follow_tag</code>, <code>offboard_trajectory</code>, <code>offboard_wps</code> (waypoints), <code>offboard_backtrack</code> (retrace the flown path), plus <code>voa_manager</code>, <code>obs_pc_filter</code>, <code>pose_filter</code>, <code>fixed_pose_input</code>, <code>horizon_cal</code>. Waypoint mode is likely a simpler integration target for an external planner than trajectory mode.</p>
+<p><strong>Tooling worth knowing about early.</strong> <code>voxl-mpa-tools</code> ships <code>voxl-inspect-*</code> for every pipe type (cam, imu, vio, pose, points, tof, gps, mavlink, detections) — that is the debugging surface. <code>voxl-logger</code> records and replays MPA data and includes <code>voxl-logger-to-rosbag</code>, so real flight data can be pulled into ROS-side tooling.</p>
+<p><strong>SDK 1.7 is in progress</strong>: <code>voxl-suite</code> on <code>dev</code> reads version 1.7.0, ahead of the 1.6.3 release the docs describe.</p>
+</section>
+<section id="bridging-the-board-to-simulation" class="level2">
+<h2 class="anchored" data-anchor-id="bridging-the-board-to-simulation">Bridging the board to simulation</h2>
+<p>Three separate seams, in increasing order of custom work.</p>
+<section id="px4-hitl-documented-works-today" class="level3">
+<h3 class="anchored" data-anchor-id="px4-hitl-documented-works-today">1. PX4 HITL — documented, works today</h3>
+<p><a href="https://docs.modalai.com/voxl2-PX4-hitl/"><code>voxl-px4-hitl</code></a> is a shipped target (<code>voxl-px4/make_package.sh</code> installs <code>voxl-px4-hitl</code>, <code>voxl-px4-hitl-start</code>, and a HITL parameter config). The host runs <strong>Gazebo Classic</strong> — in ModalAI’s <code>voxl-gazebo-docker</code> image, since Gazebo Classic has no Ubuntu 22.04 build — sends <code>HIL_SENSOR</code> / <code>HIL_GPS</code> over an FTDI serial link, and PX4 on the sensor DSP returns actuator commands. Real RC still works.</p>
+<p>Setup notes from the docs and the community write-up: SDK &gt;= 1.1.2, <code>systemctl disable voxl-px4</code>, <strong>disable <code>voxl-qvio-server</code></strong> (real VIO fights the simulated sensors), drop the FTDI <code>latency_timer</code> to 1, start Gazebo before QGroundControl. The docs wire it to J18, which is a VOXL 2 connector — on the Mini that has to move to a J10/J19 UART, so verify before ordering cables.</p>
+</section>
+<section id="simulated-vio-into-the-real-stack-also-shipped" class="level3">
+<h3 class="anchored" data-anchor-id="simulated-vio-into-the-real-stack-also-shipped">2. Simulated VIO into the real stack — also shipped</h3>
+<p>The useful find in the source tree. <a href="https://gitlab.com/voxl-public/voxl-sdk/utilities/voxl-hitl-vio-server"><code>voxl-hitl-vio-server</code></a> listens for <strong>MAVLink <code>ODOMETRY</code> messages on UDP port 14560</strong>, converts them into a <code>vio_data_t</code>, and publishes them on the qvio pipe that <code>voxl-vision-hub</code> already consumes — pose, quaternion, linear and angular velocity, covariances, and a quality field. <code>voxl-hitl-rangefinder-server</code> does the same for height.</p>
+<p>The README says “from a gazebo instance”, but nothing in the code is Gazebo-specific: <strong>any simulator that can emit MAVLink <code>ODOMETRY</code> over UDP can drive the onboard autonomy stack</strong>, and Pegasus already speaks MAVLink. So Isaac Sim can feed pose to the real board with no new protocol — an Isaac-side publisher plus a config file, not a porting project.</p>
+</section>
+<section id="simulated-imagery-into-the-perception-stack-custom" class="level3">
+<h3 class="anchored" data-anchor-id="simulated-imagery-into-the-perception-stack-custom">3. Simulated imagery into the perception stack — custom</h3>
+<p>Neither of the above exercises cameras, qVIO, DFS, or <code>voxl-mapper</code>’s depth input. Doing that means publishing frames into MPA ourselves. The <a href="https://docs.modalai.com/mpa-camera-interface/">camera interface</a> is documented and extensible — <code>camera_image_metadata_t</code> plus raw bytes, a JSON info file for discovery — and <code>voxl-camera-server</code>, <code>voxl-lepton-server</code>, and <code>voxl-uvc-server</code> are all implementations of it, so a “sim camera server” is the intended shape.</p>
+<p>Verify before committing: whether qVIO’s IMU arrives over MPA or straight from the DSP; timestamp discipline (metadata wants apps-proc <code>CLOCK_MONOTONIC</code> at exposure start, so sim frames must be stamped in the board’s clock); and matching intrinsics, distortion, and exposure metadata to a real module, otherwise the VIO tuning is meaningless. Bandwidth is a non-issue for tracking cameras (640x480 mono at 30 Hz is about 9 MB/s); 4K hires would need encoding.</p>
+<p>Cheaper substitute: <code>voxl-logger</code> records MPA pipes on a real flight and <code>voxl-replay</code> plays them back on the bench, with <code>voxl-logger-to-rosbag</code> feeding ROS-side tooling. Real data, no bridge to write.</p>
+</section>
+<section id="recommended-ladder" class="level3">
+<h3 class="anchored" data-anchor-id="recommended-ladder">Recommended ladder</h3>
+<ul>
+<li><strong>First</strong>: Isaac/Pegasus + PX4 SITL, planner on MAVSDK/MAVROS. The interface is identical to the real board, so this already is the bridge that matters.</li>
+<li><strong>Once hardware is in hand</strong>: HITL with Gazebo Classic exactly as documented, to establish that offboard commands drive the real flight stack. Then swap in Isaac as the odometry source through <code>voxl-hitl-vio-server</code> — cheap, and it puts simulated scenes in front of the real <code>voxl-mapper</code> / VOA / PX4 loop.</li>
+<li><strong>Only if perception-on-hardware becomes a milestone</strong>: MPA image injection. Budget a week; verify the qVIO IMU path first, because that single unknown decides feasibility.</li>
+</ul>
+<p>One constraint applies throughout: HITL cannot use lockstep, so the simulator must hold real time. Isaac with RTX rendering and several cameras on a laptop GPU may not, and when it slips the flight dynamics are wrong rather than merely slow.</p>
+</section>
+</section>
+<section id="running-the-stack-on-the-host-software-in-the-loop" class="level2">
+<h2 class="anchored" data-anchor-id="running-the-stack-on-the-host-software-in-the-loop">Running the stack on the host (software in the loop)</h2>
+<p>22 of the 40 cloned repos have a <code>native</code> platform in <code>build.sh</code> — <em>“Build with the native gcc/g++ compilers for testing code locally on a desktop computer”</em>. The chain below was built on Ubuntu 24.04 / gcc 13, without sudo, with <code>/usr</code> and <code>/run</code> read-only. Full log and reproduction steps in <code>voxl/NATIVE_BUILD.md</code>.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Component</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>libmodal-json, libmodal-pipe, librc-math, libmodal-journal, libvoxl-cutils</td>
+<td>build clean</td>
+</tr>
+<tr class="even">
+<td>MPA transport on x86</td>
+<td><strong>works</strong> — server/client exchanged live data</td>
+</tr>
+<tr class="odd">
+<td><code>voxl-hitl-vio-server</code></td>
+<td><strong>builds, runs, sim bridge verified end to end</strong></td>
+</tr>
+<tr class="even">
+<td><code>voxl-mapper</code></td>
+<td><strong>builds and runs</strong> (2 include-path patches, no source changes)</td>
+</tr>
+<tr class="odd">
+<td><code>voxl-vision-hub</code></td>
+<td><strong>builds and runs</strong> with a ~90-line <code>libmodal-cv</code> stub</td>
+</tr>
+<tr class="even">
+<td><code>voxl-mavlink-server</code></td>
+<td>builds with patch; upstream <code>native</code> target is broken</td>
+</tr>
+<tr class="odd">
+<td><code>voxl-mpa-tools</code></td>
+<td>builds, 18 <code>voxl-inspect-*</code> binaries</td>
+</tr>
+<tr class="even">
+<td><code>voxl-logger</code></td>
+<td>needs <code>libturbojpeg0-dev</code>, <code>libopencv-dev</code>; source compiles clean</td>
+</tr>
+</tbody>
+</table>
+<p>The autonomy layer runs on a desktop. No emulation, no cross-compiler, no board.</p>
+<section id="expectation-vs-reality" class="level3">
+<h3 class="anchored" data-anchor-id="expectation-vs-reality">Expectation vs reality</h3>
+<p>Three expectations formed before the build turned out to be wrong, all in a useful direction.</p>
+<p><strong><code>libmodal-cv</code> is a soft blocker, not a hard one.</strong> It is 8 functions, 1 struct, 1 macro, used from three files. Six are container plumbing; the only real computer vision is <code>mcv_pc_downsample2</code>, a voxel-grid decimator with depth/FOV/count/confidence filtering. A ~90-line pass-through stub gives a clean build of <code>voxl-vision-hub</code>, and the binary starts, brings up geometry, MAVLink IO, VIO manager, tag manager, VOA manager and IMU manager, and creates its MPA pipes. A faithful version is ~150 lines, half a day. Caveat: the ABI is inferred from call sites, so a stub is source-compatible only — every consumer must then be built from source, never mixed with a real ModalAI <code>.deb</code>.</p>
+<p><strong><code>libmodal-cv</code> was not even the first thing to break.</strong> <code>voxl_common_config.h</code> failed earlier, and it is open source, sitting in <code>voxl-mpa-tools/lib/</code>.</p>
+<p><strong>The dependency cost, not the code, is what makes this a day of work.</strong> Nothing usable came from the system — no Eigen, Ceres, NLopt or OpenCV dev headers — so <code>voxl-mapper</code> required building Eigen 3.4, NLopt, Ceres 2.0 (~7 min) and voxblox first. Worse, ModalAI’s <code>voxl-ceres-solver</code> and <code>voxl-nlopt</code> repos contain <strong>no source at all</strong>, only submodule pointers to upstream GitHub. An offline host cannot build voxl-mapper.</p>
+</section>
+<section id="the-bridge-verified" class="level3">
+<h3 class="anchored" data-anchor-id="the-bridge-verified">The bridge, verified</h3>
+<p><code>voxl-hitl-vio-server</code> built natively, and a purpose-written probe then sent <code>mavlink_odometry_t{x=1.5, y=2.5, z=-3.5, q=identity, v=(.1,.2,.3), quality=77}</code> to <code>127.0.0.1:14560</code> and read back <code>vio_data_t{state=OK, quality=77, T=[1.50 2.50 -3.50], vel=[0.10 0.20 0.30]}</code> on the <code>qvio</code> pipe. <strong>Isaac to MPA works today</strong>, on a laptop, with no board present.</p>
+<p>Wiring facts that matter:</p>
+<ul>
+<li>Port <strong>14560 is hardcoded</strong> (<code>receiver_udp.c:52</code>). The config exposes <code>receiver_port</code> but nothing reads it.</li>
+<li>It publishes <code>qvio</code> and <code>qvio_extended</code>, deliberately squatting the real qVIO pipe names — which is why mapper and vision-hub accept it transparently.</li>
+<li>It ignores <code>time_usec</code> and stamps with local <code>CLOCK_MONOTONIC</code>, so sim time and board time have to be reconciled externally.</li>
+<li><code>voxl-mapper</code> subscribes to <code>vvhub_body_wrt_fixed</code> (its only hardcoded input) plus <code>tof_pipe_0..3</code> and <code>depth_pipe_0..3</code>, and publishes <code>plan_msgs</code> whose control pipe accepts <code>plan_home</code>, <code>plan_to</code>, <code>follow_path</code>, <code>stop_following</code>. <strong>That control pipe is the attachment point for an external exploration planner.</strong> Depth inputs are fully config-driven, but note all four <code>depth_pipe_*_enable</code> default to 0 while <code>tof_0_enable</code> defaults to 1, and extrinsics are stored as a <em>name</em> resolved against <code>extrinsics.conf</code>, not an inline transform.</li>
+</ul>
+</section>
+<section id="practical-gotchas-when-reproducing-this" class="level3">
+<h3 class="anchored" data-anchor-id="practical-gotchas-when-reproducing-this">Practical gotchas when reproducing this</h3>
+<ul>
+<li><code>voxl-mavlink</code> is a submodule wrapper; a <code>--depth 1</code> clone leaves <code>c_library_v2</code> empty and libmodal-pipe fails on <code>mavlink.h</code>.</li>
+<li>gcc 13 needs <code>-Wno-error=</code> for <code>address-of-packed-member</code>, <code>sign-compare</code> and a <code>stringop-overflow</code> false positive. These work as env <code>CFLAGS</code> because their CMakeLists append <code>${CMAKE_C_FLAGS}</code> last.</li>
+<li><code>make install</code> writes to <code>/usr/include</code> and <code>/usr/bin</code> directly. Copy into a prefix instead.</li>
+<li>The MPA base dir is a compile-time <code>#define</code> (<code>/run/mpa/</code>) with no env override; either make <code>/run/mpa</code> writable or patch the define.</li>
+<li><strong>Raise the inotify limit before a multi-service session.</strong> <code>libmodal-pipe</code> calls <code>inotify_init()</code> per server pipe and <em>exits</em> on failure. With the default 128 instances mostly eaten by a desktop, services die seemingly at random — <code>voxl-mavlink-server</code> never survived. <code>sudo sysctl -w fs.inotify.max_user_instances=1024</code>.</li>
+</ul>
+</section>
+<section id="bugs-worth-reporting-upstream" class="level3">
+<h3 class="anchored" data-anchor-id="bugs-worth-reporting-upstream">Bugs worth reporting upstream</h3>
+<p>Found while getting this to run, all with file:line in <code>voxl/NATIVE_BUILD.md</code>:</p>
+<ul>
+<li><code>voxl-hitl-vio-server</code> assigns <code>s.quality</code> <em>after</em> the <code>memcpy</code>, so <code>qvio_extended</code> always publishes quality 0.</li>
+<li>The same file fills <code>velocity_covariance</code> from <code>pose_covariance</code> and never reads <code>odom.velocity_covariance</code>.</li>
+<li>Its “reject localhost” guard compares host-order against network-order, so it never fires on little-endian.</li>
+<li><code>voxl-mavlink-server</code>’s own <code>build.sh native</code> omits <code>-DPLATFORM</code>, so CMake hard-fails: their native target is broken out of the box.</li>
+<li><code>voxl-vision-hub/utils/voxl-inspect-vfc</code> never links <code>-lm</code> and only builds by luck on their toolchain.</li>
+<li><code>voxl-mpa-tools</code> uses <code>${OpenCV_LIBS}</code> with no <code>find_package(OpenCV)</code> anywhere, and its <code>build.sh</code> returns exit 0 even when <code>make</code> fails.</li>
+</ul>
+</section>
+</section>
+<section id="what-the-autonomy-stack-already-does" class="level2">
+<h2 class="anchored" data-anchor-id="what-the-autonomy-stack-already-does">What the autonomy stack already does</h2>
+<p>Chained together, the shipped stack is a complete indoor GPS-denied loop:</p>
+<ol type="1">
+<li>Tracking fisheye + IMU -&gt; <code>voxl-qvio-server</code> -&gt; 6-DoF pose.</li>
+<li>ToF and/or stereo -&gt; point clouds.</li>
+<li><code>voxl-mapper</code> integrates them into a TSDF, derives an ESDF collision cost field (0.2 m voxels by default), plans with RRT* (1 s budget by default), and smooths with <code>loco</code>.</li>
+<li><code>voxl-vision-hub</code> transforms the trajectory into the autopilot frame and feeds PX4 in trajectory offboard mode.</li>
+<li>VOA fuses stereo/ToF/rangefinder points into a buffer driving PX4 collision prevention, independent of the planner.</li>
+</ol>
+<p>So the standing question of whether local navigation is already solved by the hardware vendor has, for indoor, slow, GPS-denied flight, a <strong>largely affirmative</strong> answer. Research effort is better spent on the exploration and capture layers than on re-deriving local navigation.</p>
+<p>The honest caveats:</p>
+<ul>
+<li><code>voxl-mapper</code> is labelled beta and authorized for beta use only.</li>
+<li>qVIO is a closed-source DSP blob that cannot be debugged or extended.</li>
+<li>Everything is tuned for ModalAI’s own Starling airframes.</li>
+</ul>
+</section>
+<section id="onboard-ai-compute-realistically" class="level2">
+<h2 class="anchored" data-anchor-id="onboard-ai-compute-realistically">Onboard AI compute, realistically</h2>
+<p>15 TOPS sounds like a lot. The constraint is not throughput, it is the toolchain:</p>
+<ul>
+<li><strong>No CUDA.</strong> Nothing from the Isaac / PyTorch side runs on this board as-is. Anything learned must be exported to LiteRT with a GPU/NNAPI/NPU delegate, or converted for the <a href="https://www.qualcomm.com/developer/software/neural-processing-sdk-for-ai">Qualcomm Neural Processing SDK</a> (SNPE). Invalid delegate choices silently fall back to CPU.</li>
+<li><strong>Custom models are not drop-in</strong> for <code>voxl-tflite-server</code>: each needs a C++ class implementing <code>post_process()</code> and <code>worker()</code>.</li>
+<li>Published VOXL 2 GPU-delegate numbers: MobileNetV1 ~125 fps, YOLOv5 ~36 fps. Comfortable for a detector alongside VIO; not a budget for a large policy network at high rate.</li>
+</ul>
+<p>So a learned exploration policy of the GLEAM/NBP kind is <em>portable</em> to this hardware, but porting is real engineering: model conversion, quantization, a serving class, and a latency budget shared with VIO, mapping, and encode. For a research milestone the policy is better kept on a PC, streaming decisions to the drone.</p>
+</section>
+<section id="what-is-provided-and-what-is-missing" class="level2">
+<h2 class="anchored" data-anchor-id="what-is-provided-and-what-is-missing">What is provided, and what is missing</h2>
+<p>Provided out of the box — effectively the entire onboard column of an indoor autonomy system:</p>
+<ul>
+<li>pose, depth, a volumetric map,</li>
+<li>obstacle avoidance,</li>
+<li>a web visualization surface,</li>
+<li>log/replay and video streaming,</li>
+<li>a flight controller that already consumes external trajectories.</li>
+</ul>
+<p>Missing, and therefore the research surface — goal selection. <code>voxl-mapper</code> plans a path to a goal someone else chose. There is no:</p>
+<ul>
+<li>frontier selection,</li>
+<li>information gain,</li>
+<li>next-best-view,</li>
+<li>photo-coverage metric,</li>
+<li>notion of whether the pictures taken were any good.</li>
+</ul>
+<section id="integration-surface" class="level3">
+<h3 class="anchored" data-anchor-id="integration-surface">Integration surface</h3>
+<p>For a PC-side planner there are two clean options, neither needing a custom protocol:</p>
+<ul>
+<li>MAVLink/MAVSDK over the UDP ports <code>voxl-vision-hub</code> opens, sending setpoints or trajectories.</li>
+<li>ROS 2 topics via <code>voxl-mpa-to-ros2</code> (pose, images, point clouds up; goals down), which matches how the simulation-side tooling is structured.</li>
+</ul>
+<p>For the photogrammetry stream:</p>
+<ul>
+<li>Hires stills go through the ISP as JPG snapshots, stored on the 128 GB onboard.</li>
+<li>Offload over USB3 or an add-on modem — there is no built-in radio.</li>
+<li>Rolling shutter plus the 3-stream cap means capture has to be deliberate — pose, stop, shoot — not continuous high-rate video harvesting.</li>
+</ul>
+<p>Simulation link: QRB5165 is not an Isaac target. The bridge between Isaac Sim / Pegasus and this hardware is PX4 — software-in-the-loop (SITL) first, MAVLink message compatibility later.</p>
+</section>
+</section>
+<section id="risks-and-caveats" class="level2">
+<h2 class="anchored" data-anchor-id="risks-and-caveats">Risks and caveats</h2>
+<ul>
+<li><strong>Stack age.</strong> Ubuntu 18.04, kernel 4.19, ROS 2 Foxy (end of life 2023), PX4 1.14. Anything modern lives in Docker. Expect friction with current Python/CV packages.</li>
+<li><strong>Flight controller shares the SoC.</strong> Excellent for SWaP (size, weight and power) and latency, but a Linux-side fault and the autopilot are on the same die. J10/J19 support an external flight controller where that separation is required.</li>
+<li><strong>Closed components and a field-of-use licence.</strong> The VIO algorithm (<code>libmvVISLAM</code>) and the sensor DSP images are Qualcomm builds; if VIO misbehaves in a given environment the available responses are configuration and Open-VINS, not a fix. Separately, most SDK repos are BSD-3 <strong>plus</strong> a clause restricting use to ModalAI hardware — source-available, not open source, so the code cannot be lifted onto another board.</li>
+<li><strong>No documented UART lidar path</strong> on the Mini. If the sensor plan drifts toward lidar SLAM (simultaneous localization and mapping), bring-up needs verifying before committing.</li>
+<li><strong>Roadmap risk is the strongest argument against this board.</strong> VOXL 3 (QCS8550, 45 TOPS) is SBIR-funded development, not a product — <code>modalai.com/products/voxl-3</code> 404s. Meanwhile the signals point away from QRB5165: SDK 1.6 carries QCS6490 support and new MVX-* boards, the SDK 1.7 betas exist only for a QCS6490 next-gen board rather than voxl2/voxl2-mini, and a ModalAI engineer stated on their forum (17 Jul 2026) that <em>“we are not going to be officially supporting Ubuntu2.0 Kernel on VOXL2, as we are working on enabling next gen hardware”</em>. Forum-sourced, so confirm with sales — but if accurate, the Ubuntu 18.04 userland is where VOXL 2 stops, and a product roadmap should not assume otherwise.</li>
+<li><strong>Their own support has limits on the closed parts.</strong> In a February 2026 forum thread about violently unstable qVIO flight, a ModalAI engineer replied that <em>“the underlying QVIO source code is not available”</em> to them either. That is the practical meaning of the <code>libmvVISLAM</code> dependency.</li>
+<li><strong>Lead time is the practical killer.</strong> The product page states <em>“Expected to ship within 60 business days from San Diego, CA”</em> for the Mini (30 for the full VOXL 2). That is roughly three months. Any schedule that depends on having one of these boards in hand starts with an order placed up front.</li>
+<li><strong>Cost of hands-on work.</strong> $1.25-1.45k for a board that still needs an airframe, ESC, radio, and cameras. The Starling 2 / Starling 2 Max dev drones run the same SDK flying and are the cheaper path to validating the software, though they carry full VOXL 2 rather than the Mini.</li>
+</ul>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<p>Product and board:</p>
+<ul>
+<li><a href="https://www.modalai.com/products/voxl-2-mini">VOXL 2 Mini product page</a></li>
+<li><a href="https://docs.modalai.com/voxl2-mini/">Docs overview</a></li>
+<li><a href="https://docs.modalai.com/voxl2-mini-feature-matrix/">Feature matrix</a></li>
+<li><a href="https://docs.modalai.com/voxl2-mini-connectors/">Connectors</a></li>
+<li><a href="https://docs.modalai.com/voxl2-mini-power/">Power</a></li>
+<li><a href="https://docs.modalai.com/voxl2-mini-image-sensors/">Image sensors</a></li>
+<li><a href="https://docs.modalai.com/voxl2-mini-offboard-sensors/">Offboard sensors</a></li>
+<li><a href="https://docs.modalai.com/voxl2-mini-d0013/">D0013 architecture</a></li>
+</ul>
+<p>Software:</p>
+<ul>
+<li><a href="https://docs.modalai.com/voxl-sdk/">VOXL SDK overview</a></li>
+<li><a href="https://docs.modalai.com/sdk-1.6-release-notes/">SDK 1.6 release notes</a></li>
+<li><a href="https://docs.modalai.com/voxl-camera-server/">voxl-camera-server</a></li>
+<li><a href="https://docs.modalai.com/voxl-dfs-server/">voxl-dfs-server</a></li>
+<li><a href="https://docs.modalai.com/voxl-tflite-server/">voxl-tflite-server</a></li>
+<li><a href="https://docs.modalai.com/voxl-vision-hub/">voxl-vision-hub</a></li>
+<li><a href="https://gitlab.com/voxl-public/voxl-sdk/services/voxl-mapper">voxl-mapper source</a></li>
+<li><a href="https://docs.modalai.com/ros2-installation-voxl2/">ROS 2 on VOXL 2</a></li>
+</ul>
+<p>Flight stack and accessories:</p>
+<ul>
+<li><a href="https://ardupilot.org/copter/docs/common-modalai-voxl2.html">ArduPilot on VOXL 2</a></li>
+<li><a href="https://docs.px4.io/main/en/flight_controller/modalai_voxl_2">PX4 VOXL 2 page</a></li>
+<li><a href="https://docs.modalai.com/power-module-v3-datasheet/">Power Module v3 datasheet</a></li>
+<li><a href="https://docs.modalai.com/image-sensors/">ModalAI image sensor catalog</a></li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/xl0\.github\.io\/exploring-edge-perf");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

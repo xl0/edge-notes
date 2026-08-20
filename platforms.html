@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Drone platforms – exploring-edge-perf</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-d63a2c9c8df14b07662b36303925c8cc.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="Drone platforms – exploring-edge-perf">
+<meta property="og:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta property="og:site_name" content="exploring-edge-perf">
+<meta name="twitter:title" content="Drone platforms – exploring-edge-perf">
+<meta name="twitter:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta name="twitter:creator" content="@xl0xl0xl0">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">exploring-edge-perf</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="http://github.com/xl0/edge-notes"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/xl0xl0xl0"> <i class="bi bi-twitter" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./platforms.html">Drone platforms</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Research notebooks</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./edge_llm_tps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Theoretical LLM TPS on IQ-9075, Jetson, and NVIDIA GPUs</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./3d_photo_reconstruction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">3D photo reconstruction / indoor navigation research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autonomous_drone_navigation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Autonomous indoor drone navigation / capture research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04_ref_matrials.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">04_ref_matrials.html</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./nvidia_isaac_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NVIDIA Isaac ecosystem research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./voxl2_mini.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI VOXL 2 Mini research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./flight_compute_landscape.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Flight compute and competing ecosystems</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modalai_modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI module reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pixhawk_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Pixhawk ecosystem</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ros.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ROS, from zero</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./vio_slam.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIO and SLAM</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./navigation_exploration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Navigation and exploration</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./platforms.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Drone platforms</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#turnkey-confined-space-and-indoor-inspection-platforms" id="toc-turnkey-confined-space-and-indoor-inspection-platforms" class="nav-link active" data-scroll-target="#turnkey-confined-space-and-indoor-inspection-platforms">Turnkey confined-space and indoor inspection platforms</a></li>
+  <li><a href="#warehouse-inventory-drones-autonomy-at-scale-no-3d-deliverable" id="toc-warehouse-inventory-drones-autonomy-at-scale-no-3d-deliverable" class="nav-link" data-scroll-target="#warehouse-inventory-drones-autonomy-at-scale-no-3d-deliverable">Warehouse inventory drones: autonomy at scale, no 3D deliverable</a></li>
+  <li><a href="#camera-drones-closed-autopilot-open-payload" id="toc-camera-drones-closed-autopilot-open-payload" class="nav-link" data-scroll-target="#camera-drones-closed-autopilot-open-payload">Camera drones: closed autopilot, open payload</a></li>
+  <li><a href="#open-research-platforms-sold-to-be-reprogrammed" id="toc-open-research-platforms-sold-to-be-reprogrammed" class="nav-link" data-scroll-target="#open-research-platforms-sold-to-be-reprogrammed">Open research platforms: sold to be reprogrammed</a></li>
+  <li><a href="#the-fpv-industry-airframes-as-a-parts-bin" id="toc-the-fpv-industry-airframes-as-a-parts-bin" class="nav-link" data-scroll-target="#the-fpv-industry-airframes-as-a-parts-bin">The FPV industry: airframes as a parts bin</a></li>
+  <li><a href="#the-chinese-ecosystem" id="toc-the-chinese-ecosystem" class="nav-link" data-scroll-target="#the-chinese-ecosystem">The Chinese ecosystem</a></li>
+  <li><a href="#handheld-capture-the-non-flying-competition" id="toc-handheld-capture-the-non-flying-competition" class="nav-link" data-scroll-target="#handheld-capture-the-non-flying-competition">Handheld capture: the non-flying competition</a></li>
+  <li><a href="#fit-to-the-indoor-capture-project" id="toc-fit-to-the-indoor-capture-project" class="nav-link" data-scroll-target="#fit-to-the-indoor-capture-project">Fit to the indoor capture project</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content column-page-right" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Drone platforms</h1>
+</div>
+
+
+
+<div class="quarto-title-meta column-page-right">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<p>A survey of complete aircraft — who builds drones relevant to indoor autonomous capture, what each actually does, and what each lets you change. The <a href="./flight_compute_landscape.html">flight compute notebook</a> covers boards and modules; this one covers things that fly out of the box, from $200 Shenzhen cinewhoops to six-figure mining scanners. So far our platform research has centered on <a href="./voxl2_mini.html">ModalAI</a>; this notebook is the deliberate look around.</p>
+<p>The organizing axis is <strong>what the vendor lets you change</strong>, because for a research-then-product effort that matters more than any spec:</p>
+<ol type="1">
+<li><strong>Turnkey, closed</strong> — finished capability, no code access. Useful as competitive benchmarks and as proof of what is tractable.</li>
+<li><strong>Closed autopilot, open payload</strong> — DJI-class platforms: you may bolt on compute and sensors, but the flight brain is a black box.</li>
+<li><strong>Open research platforms</strong> — PX4/ArduPilot-based aircraft sold to be reprogrammed; the flight stack, companion computer, and sensors are yours.</li>
+<li><strong>Bare airframes</strong> — the FPV (first-person view) industry’s parts ecosystem; everything is yours, including the labor.</li>
+</ol>
+<p>Core take: <strong>autonomy is bought locked or built open — nobody sells it unlocked.</strong> Every platform that ships real indoor autonomy ships it closed; every open platform ships with the autonomy left as an exercise. That split is the market’s shape, and it is why the earlier notebooks keep concluding that the differentiating work is the <a href="./navigation_exploration.html">goal-selection layer</a>, not the vehicle.</p>
+<p>Prices are August 2026 snapshots where a source is named, and omitted where verification failed; the <a href="./flight_compute_landscape.html#caveats-on-the-figures-above">volatility caveats</a> from the compute notebook apply here in full.</p>
+<section id="turnkey-confined-space-and-indoor-inspection-platforms" class="level2">
+<h2 class="anchored" data-anchor-id="turnkey-confined-space-and-indoor-inspection-platforms">Turnkey confined-space and indoor inspection platforms</h2>
+<p>The category closest to our problem: aircraft sold specifically to fly where GPS is not, and bring back data.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Platform</th>
+<th>Origin</th>
+<th>What it is</th>
+<th>Autonomy</th>
+<th>Price signal</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://www.flyability.com/elios-3">Flyability Elios 3</a></td>
+<td>CH</td>
+<td>Cage-protected quad, 4K + thermal + <a href="https://ouster.com/">ouster lidar</a>, 12 min, IP44</td>
+<td>Assisted teleop; collision-<em>tolerant</em> by cage, not by planning</td>
+<td>~$25k (<a href="https://robotomated.com/explore/drone/flyability-elios-3">reseller</a>)</td>
+</tr>
+<tr class="even">
+<td><a href="https://www.emesent.com/emesent-product/hovermap-series/">Emesent Hovermap ST-X</a></td>
+<td>AU</td>
+<td>Lidar SLAM <em>payload</em> (300 m range, ~1 M pts/s) on a DJI M300/M350 or handheld</td>
+<td>True bounded-volume autonomous exploration (“draw a cube, it scans it”)</td>
+<td>payload alone runs tens of thousands of dollars; carrier drone extra</td>
+</tr>
+<tr class="odd">
+<td><a href="https://www.exyn.com/">Exyn ExynAero</a></td>
+<td>US</td>
+<td>Lidar quad for mines/stockpiles</td>
+<td>Self-declared “Level 4” volume exploration</td>
+<td>enterprise-quote only</td>
+</tr>
+<tr class="even">
+<td><a href="https://www.skydio.com/x10/technical-specs">Skydio X10</a></td>
+<td>US</td>
+<td>Six nav cameras, 50/64 MP + FLIR Boson+ thermal, NightSense zero-light flight, onboard 2D/3D mapping</td>
+<td>Best-in-class obstacle avoidance + 3D Scan coverage of an operator-defined volume</td>
+<td>~$15.7k (<a href="https://robotomated.com/explore/drone/skydio-x10d">tracker</a>)</td>
+</tr>
+<tr class="odd">
+<td><a href="https://www.skydio.com/r10">Skydio R10</a></td>
+<td>US</td>
+<td>Purpose-built <em>indoor</em> variant, ~770 g, integrated lighting, two-way audio; GA targeted H1 2026</td>
+<td>Skydio autonomy indoors; public-safety framing</td>
+<td>unannounced</td>
+</tr>
+<tr class="even">
+<td><a href="https://brincdrones.com/lemur-2/">BRINC Lemur 2</a></td>
+<td>US</td>
+<td>Public-safety indoor quad: lidar + 4K + FLIR, glass-breaker option, 20+ min</td>
+<td>Real-time lidar 2D floor plans / 3D map (“Autonomy Engine”); pilot in command</td>
+<td>quote-only</td>
+</tr>
+<tr class="odd">
+<td><a href="https://cleorobotics.com/">Cleo Robotics Dronut X1</a></td>
+<td>US</td>
+<td>Bi-rotor <em>ducted donut</em>, 425 g, truly collision-safe, 12 min</td>
+<td>Assisted teleop + position hold</td>
+<td>quote-only</td>
+</tr>
+<tr class="even">
+<td><a href="https://shop.leica-geosystems.com/blk2fly">Leica BLK2FLY</a></td>
+<td>CH</td>
+<td>Flying laser scanner (survey-grade lidar + 5 cameras)</td>
+<td>Autonomous <em>scan coverage</em> of building exteriors; indoor GPS-denied supported</td>
+<td>~$50k class (unverified)</td>
+</tr>
+</tbody>
+</table>
+<p>Reading the table against <a href="./flight_compute_landscape.html#the-autonomy-scorecard">the autonomy scorecard</a>: only Emesent and Exyn <em>explore</em> — both lidar-first, mining-bred, with geometry (not imagery) as the deliverable. Skydio and Leica <em>cover</em> an operator-drawn volume with excellent imagery but no exploration. Flyability, BRINC, and Cleo are <em>flown</em> — their value is surviving the environment, and their maps are situational awareness, not reconstruction products. The pattern from the compute notebook holds after this wider sweep: exploration players produce point clouds, imagery players need a human to point them.</p>
+<p>Two design lessons worth stealing regardless: the cage/duct (Elios, Dronut) converts obstacle contact from a crash into a bump, which changes the safety calculus of flying near furniture entirely; and every serious indoor platform ships its own lighting, conceding that ambient indoor light is insufficient for their cameras — while still leaving the harsh view-dependent shading problem (<a href="./flight_compute_landscape.html#where-the-gap-is">capture-quality gap #3</a>) unsolved.</p>
+</section>
+<section id="warehouse-inventory-drones-autonomy-at-scale-no-3d-deliverable" class="level2">
+<h2 class="anchored" data-anchor-id="warehouse-inventory-drones-autonomy-at-scale-no-3d-deliverable">Warehouse inventory drones: autonomy at scale, no 3D deliverable</h2>
+<p>A separate turnkey niche that matters as an existence proof. <a href="https://www.verity.net/">Verity</a> (CH), <a href="https://www.corvus-robotics.com/">Corvus Robotics</a> (US), and <a href="https://www.gather.ai/">Gather AI</a> (US) sell fully autonomous indoor drones that fly inventory scans in working warehouses — lights on or off, no GPS, no beacons, no pilot, launching and landing from charging nests on a schedule. Corvus shipped a freezer-rated variant in early 2026 (deployed at Kroger, −20 °F operation); Verity documents customers halving inventory costs.</p>
+<p>What makes them relevant despite the different mission: they are the only vendors anywhere shipping <strong>unattended indoor autonomy as a product</strong> — takeoff to landing with nobody watching. It is tractable because the environment cooperates: warehouse aisles are straight, tall, static, rack-textured corridors, and the deliverable is barcode reads at known rack positions, not geometry. Nobody has carried this level of autonomy into furnished, cluttered, room-scale space — that, plus a reconstruction-grade deliverable, is exactly the open square on the board.</p>
+</section>
+<section id="camera-drones-closed-autopilot-open-payload" class="level2">
+<h2 class="anchored" data-anchor-id="camera-drones-closed-autopilot-open-payload">Camera drones: closed autopilot, open payload</h2>
+<p>The volume market. Superb hardware, sophisticated <em>assistive</em> autonomy, and a locked flight stack.</p>
+<p><strong>DJI</strong> owns the category (its 2026 line: Mini 5 Pro / Neo 2 / Avata 2 consumer; Mavic 4 Pro prosumer; <a href="https://enterprise.dji.com/matrice-4-series">Matrice 4</a> and <a href="https://enterprise.dji.com/matrice-400">Matrice 400</a> enterprise). The enterprise flagships are formidable sensor platforms — the Matrice 400 flies 59 min, lifts 6 kg, and carries rotating lidar + mmWave (millimeter-wave) radar + low-light omnidirectional vision for obstacle sensing. But across the whole line the obstacle system is <em>avoidance</em>, not mapping; “terrain follow” and “waypoint” autonomy assume outdoor missions; and developer access is the <a href="https://developer.dji.com/payload-sdk/">Payload SDK</a> — mount your computer as a <em>payload</em>, receive telemetry and video, inject guidance-level commands — while the flight controller, state estimator, and obstacle logic stay sealed (the old Onboard SDK that gave Matrice-series low-level control is discontinued). Emesent’s choice to ship Hovermap as a DJI payload shows both what PSDK enables and what it costs: their SLAM must <em>fight</em> the sealed DJI estimator rather than replace it.</p>
+<p><strong><a href="https://www.autelrobotics.com/">Autel Robotics</a></strong> (CN, Shenzhen) is the DJI-shaped alternative; the EVO Max 4T V2 explicitly markets GPS-denied indoor flight (stereo vision + mmWave radar, “Autonomy Engine” path planning, anti-jamming). Same closure model as DJI.</p>
+<p><strong><a href="https://www.parrot.com/en/drones/anafi-ai">Parrot ANAFI Ai</a></strong> (FR) is the odd one out and worth knowing: a 900 g stereo-vision drone whose <a href="https://developer.parrot.com/">Air SDK</a> runs <em>your code on the drone itself</em> with access to cameras, IMU, and the autopilot’s planning layer, plus the free Sphinx simulator (Gazebo + Unreal). The closest thing to an open enterprise camera drone — from a vendor whose consumer exit and small market share make longevity the standing question.</p>
+<p><strong>Skydio</strong> left the consumer market in 2023 to sell autonomy to enterprise and defense (previous section) — evidence that best-in-class obstacle avoidance alone could not win a consumer camera-drone fight against DJI’s price/quality curve.</p>
+<p>For our purposes this category contributes sensors-per-dollar benchmarks and one strategic fact: <strong>no camera-drone vendor sells what our project needs to exist</strong> — if they did, the <a href="./flight_compute_landscape.html#where-the-gap-is">gap analysis</a> would already be closed.</p>
+</section>
+<section id="open-research-platforms-sold-to-be-reprogrammed" class="level2">
+<h2 class="anchored" data-anchor-id="open-research-platforms-sold-to-be-reprogrammed">Open research platforms: sold to be reprogrammed</h2>
+<p>Aircraft whose selling point is that the software is yours. The practical question for each is what you get beyond the parts: calibration, working VIO/mapping out of the box, documentation, community.</p>
+<ul>
+<li><strong><a href="https://www.modalai.com/products/starling-2">ModalAI Starling 2 / Starling 2 Max</a></strong> (US) — the <a href="./voxl2_mini.html">VOXL 2</a> sold as a flying dev kit: ~280–500 g, factory-calibrated cameras, qVIO and voxblox mapping working on first boot, PX4 on-SoC. The only open platform that ships <em>working indoor autonomy plumbing</em> rather than parts. Sentinel is the larger stereo-camera sibling. Weaknesses per notebook 07: closed VIO algorithm, aging Ubuntu/ROS base, VOXL 3 transition risk.</li>
+<li><strong><a href="https://holybro.com/products/px4-development-kit-x500-v2">Holybro X500 v2 PX4 dev kit</a></strong> (CN) — the reference Pixhawk-class build: carbon frame, Pixhawk 6C/6X, assembles in ~30 min, no soldering; add your own companion computer and cameras. The <a href="https://holybro.com/products/px4-vision-dev-kit-v1-5">PX4 Vision v1.5</a> variant adds an UP Core computer and a Structure Core depth camera with PX4’s obstacle-avoidance sample stack. Cheap, standard, entirely open — and entirely un-integrated: VIO, mapping, and calibration are your problem.</li>
+<li><strong><a href="https://www.amovlab.top/">AMOVLAB</a> P450 / P600</strong> (CN, Chengdu) — PX4 + ROS research quads around their open-source <a href="https://github.com/amov-lab/Prometheus">Prometheus</a> autonomy framework (planning, SLAM, swarm, SpireCV vision), sold with onboard computers and depth/lidar options. A Dronecode member; the P-series is widespread in Chinese university labs — the closest Chinese analog to a Starling, built from open parts.</li>
+<li><strong><a href="https://www.visbot.com.cn/Products/OWL/">Visbot OWL series</a></strong> (威斯博科技, CN) — “AI vision research drones” for the Chinese university-lab market (Tsinghua, Beihang, and BIT labs are reference customers), launched 2022 and distributed through education-channel resellers such as <a href="https://ht-uav.com/">HT-UAV / Hento Tech</a>. The <a href="https://www.ht-uav.com/project/68">OWL mini3</a> is 200 mm / 675 g with 7 cm-baseline stereo, lidar, and an iToF (indirect time-of-flight) sensor marketed as detecting 5 mm wires; the larger OWL 3 adds a gimballed 4K camera, omnidirectional lidar, RTK, and a deliberately domestic 8-core SoC with a 6 TOPS NPU (“reject technology blockade”). Flight control is Visbot’s PX4-based “Enzo Pro” board flashable from stock QGroundControl, and the companion computer ships Ubuntu with <strong>VINS-Fusion VIO and EGO-Planner preinstalled</strong> — the open stack of <a href="./navigation_exploration.html#systems-worth-knowing-by-name">the navigation notebook</a> as factory firmware — plus swarm support, YOLO v8, and a claimed frontier/viewpoint-based unknown-environment search mode. Documentation is Chinese-only — less a procurement candidate for us than evidence of how fast the Chinese research bench productizes the open algorithms.</li>
+<li><strong><a href="https://www.bitcraze.io/">Bitcraze Crazyflie 2.1 brushless</a></strong> (SE) — the 30–40 g open-everything nano platform: schematics, firmware, Python API, lighthouse/UWB (ultra-wideband) positioning, swarm tooling. Too small to carry capture sensors; unbeatable for cheap algorithm work and swarm research at desk scale.</li>
+<li><strong><a href="https://github.com/uzh-rpg/agilicious">Agilicious</a></strong> (UZH) — the open-source, open-hardware agile-flight reference (Science Robotics 2022): 5-inch racing frame, Jetson TX2-class compute, supports neural-network controllers. Built for the racing/agility research line, not for mapping payloads; the CTU-Prague <a href="https://github.com/ctu-mrs/mrs_uav_system">MRS UAV system</a> plays the same role for multi-UAV field research on larger frames.</li>
+</ul>
+<p>Graveyard, as a calibration on platform longevity: Intel Aero (dead 2019), Qualcomm Flight (dead, <a href="./flight_compute_landscape.html">resurrected only as boards</a>), DJI Matrice 100 + Onboard SDK (the last time DJI sold programmable flight, discontinued), 3DR Solo (dead 2016, PX4’s corporate parent exited hardware). Open <em>platforms</em> die fast; the open <em>stacks</em> (PX4, ArduPilot, ROS) survive their hardware hosts — an argument for keeping value in the stack, echoed in <a href="./ros.html">the ROS notes</a>.</p>
+</section>
+<section id="the-fpv-industry-airframes-as-a-parts-bin" class="level2">
+<h2 class="anchored" data-anchor-id="the-fpv-industry-airframes-as-a-parts-bin">The FPV industry: airframes as a parts bin</h2>
+<p>One tier below “platform”: the first-person-view hobby industry — almost entirely Chinese (iFlight, GEPRC, BetaFPV, Flywoo, Diatone, SpeedyBee, Foxeer; plus US-designed frames built on the same supply chain) — sells exactly the airframe class an indoor capture drone needs, at hobby prices.</p>
+<p>The relevant subspecies is the <strong>cinewhoop</strong>: a 2.5–3.5-inch quad with full prop ducts, tuned for smooth slow flight in tight indoor spaces, built to bump into things and carry a camera — GEPRC’s Cinelog series is the benchmark, BetaFPV’s Pavo line gets brushless HD capture under 100 g, and build guides for the class are commodity content. This is the same airworthiness concept as the Elios cage and Dronut duct, at 1/50th the price, minus every gram of autonomy.</p>
+<p>Why it matters beyond cheap frames: the FPV stack (Betaflight flight controllers, 20×20/30×30 mm mounting standards, O4-class digital video) is <em>convertible</em>. The same frames fly ArduPilot/PX4 on FPV-format flight controllers (Chinese vendors like MicoAir ship ArduPilot-targeted boards), and ModalAI’s own Starling is essentially a cinewhoop-class frame around a VOXL. The realistic prototype path for a house-scale capture drone is a ducted 3–3.5-inch frame + <a href="./flight_compute_landscape.html#the-split-stack-pixhawk-fc-separate-computer">Pixhawk-class FMU or VOXL</a> + companion — commodity muscle and skeleton under a research brain. The FPV parts bin is also the fallback that keeps any single-vendor risk (ModalAI’s roadmap, DJI’s lockdown, covered-list churn) from being existential: motors, ESCs, frames, and video links are multi-sourced commodities.</p>
+</section>
+<section id="the-chinese-ecosystem" class="level2">
+<h2 class="anchored" data-anchor-id="the-chinese-ecosystem">The Chinese ecosystem</h2>
+<p>Worth treating as a system rather than a vendor list, because it is where most of the world’s drone hardware actually comes from.</p>
+<p><strong>Scale.</strong> Shenzhen alone hosts ~1,900 companies in the “low-altitude economy”; Chinese consumer drones hold ~70% of the global market and industrial drones ~50%; Guangdong produced ~6.9 M civil UAVs in 2024, and the 15th Five-Year Plan (Oct 2025) made the sector a national strategic priority. DJI sits on the deepest component ecosystem in the industry — motors, gimbals, batteries, radios, cameras — which is why nobody matches its price/quality curve.</p>
+<p><strong>The layers, from our buyer’s perspective:</strong></p>
+<ul>
+<li><strong>Finished autonomy-adjacent drones</strong>: DJI and Autel (previous section) — closed.</li>
+<li><strong>The open-hardware autopilot industry is Chinese.</strong> Holybro and CUAV build most of the world’s <a href="./pixhawk_ecosystem.html#the-standards-themselves">Pixhawk-standard</a> autopilots; SIYI (radios, gimbals, now autopilots), Radiolink, and MicoAir fill the rest of the catalog; the entire FPV component industry (previous section) rounds it out. “US-made” alternatives exist at 3–10× the price for compliance reasons, not capability — the <a href="./flight_compute_landscape.html">compute notebook</a> prices that premium.</li>
+<li><strong>Research platforms</strong>: AMOVLAB’s Prometheus P-series and Visbot’s OWL line (previous section) — and an education market behind them large enough that resellers like HT-UAV sell entire drone <em>training labs</em> (assembly benches, simulators, certification prep) to vocational schools, a demand channel with no Western equivalent; AMOV RobotLab also resells ModalAI hardware into China (a price source <a href="./modalai_modules.html">notebook 09</a> already uses). Chinese university labs (HKUST, ZJU-FAST — the groups behind <a href="./navigation_exploration.html#systems-worth-knowing-by-name">Fast-Planner, EGO-Planner, FUEL, RACER</a>) publish the open planning software the rest of the world’s drones run; hardware and algorithms both flow out of the same ecosystem.</li>
+<li><strong>Capture hardware</strong>: <a href="https://xgrids.com/">XGRIDS</a> (Shenzhen) sells the splat-native handheld scanners (next section) — currently the most product-shaped 3DGS capture devices anywhere.</li>
+</ul>
+<p><strong>The regulatory squeeze, both directions.</strong> In the US: DJI (and Autel) were added to the FCC Covered List in December 2025 after the NDAA’s (National Defense Authorization Act) audit deadline lapsed, and the FCC categorically extended coverage to foreign-made drones and <em>critical components</em> — blocking new equipment authorizations (existing aircraft keep flying; no retroactive grounding). In the other direction, China has applied export controls to drone components with military applicability since 2023. Practical consequences for a project like ours: US-market product plans cannot assume Chinese airframes or radios remain importable; everywhere else, the Chinese supply chain remains the default and the cheapest path; and either way the <em>software</em> — the part we intend to own — is unaffected.</p>
+</section>
+<section id="handheld-capture-the-non-flying-competition" class="level2">
+<h2 class="anchored" data-anchor-id="handheld-capture-the-non-flying-competition">Handheld capture: the non-flying competition</h2>
+<p>The devices that currently <em>win</em> the indoor-capture deliverable, included because they define the quality bar and the price ceiling a drone product must beat:</p>
+<ul>
+<li><strong><a href="https://xgrids.com/lixell2">XGRIDS Lixel L2 Pro</a></strong> — lidar (16/32 channel) + 48 MP panoramic cameras + IMU, multi-SLAM, and native 3D Gaussian Splatting output through their LCC pipeline (walk the building, get an explorable splat scene for Unity/UE5/web). ~€5.6–6.3k at EU resellers; the sub-kg PortalCam pushes the same idea cheaper. The most direct commercial expression of the deliverable our <a href="./3d_photo_reconstruction.html#neural-rendering-nerf-and-3d-gaussian-splatting">reconstruction notes</a> target.</li>
+<li><strong><a href="https://shop.leica-geosystems.com/blk2go">Leica BLK2GO</a></strong> — the survey-grade handheld SLAM scanner (~$50k class); BLK2FLY is its flying sibling.</li>
+<li><strong><a href="https://www.navvis.com/">NavVis VLX</a></strong> — wearable scanner for AEC-grade (architecture/engineering/construction) building capture.</li>
+<li><strong><a href="https://matterport.com/">Matterport Pro3</a></strong> — tripod lidar camera; the incumbent of real-estate capture, human-repositioned per scan point.</li>
+</ul>
+<p>The strategic read: handhelds solve capture <em>quality</em> by attaching the sensor to a human who solves navigation, coverage, and lighting judgment for free. They are cheaper, safer, and better-lit than any drone today — in reachable spaces. A capture drone’s case rests on what a walking human cannot do: unreachable volumes, hazardous interiors, elevated viewpoints, scheduled unattended re-capture, and eventually cost-per-scan at fleet scale. Any pitch that ignores the $6k walking alternative is dishonest about its competition.</p>
+</section>
+<section id="fit-to-the-indoor-capture-project" class="level2">
+<h2 class="anchored" data-anchor-id="fit-to-the-indoor-capture-project">Fit to the indoor capture project</h2>
+<p>What this wider sweep changes and confirms:</p>
+<ul>
+<li><strong>The gap survives the broader look.</strong> Adding BRINC, Cleo, Autel, Parrot, the warehouse players, and the Chinese research vendors to the picture surfaces no one combining autonomous exploration of furnished interiors with reconstruction-grade imagery. The closest approaches come from opposite sides: Emesent (real exploration, lidar deliverable) and XGRIDS (real splat deliverable, human navigation).</li>
+<li><strong>Development platform: unchanged.</strong> Starling 2 (working autonomy plumbing, one vendor) versus Holybro-class split stack plus companion (everything open, everything manual) remains the real choice, with AMOVLAB’s P-series now a named third option of the second kind — worth a closer look if procurement from China is acceptable, since it ships the ROS/planning integration Holybro leaves out.</li>
+<li><strong>Airframe endgame: ducted, cinewhoop-class.</strong> Elios, Dronut, Starling, and the entire cinewhoop industry independently converged on protected props for indoor flight; a product airframe should start there, built from the commodity FPV supply chain.</li>
+<li><strong>Two design patterns to adopt</strong>: contact tolerance as a safety layer (cage/duct changes the cost of the planner being wrong), and onboard lighting as a capture subsystem to engineer deliberately rather than bolt on — no vendor has solved capture-grade illumination, so it is open differentiation surface.</li>
+<li><strong>Benchmarks to hold ourselves against</strong>: Skydio X10 for obstacle-avoidance quality, Hovermap for bounded-volume exploration UX (“draw a cube”), Verity/Corvus for unattended operation, XGRIDS LCC for the deliverable. Each defines the bar on one axis; the product thesis is clearing all four at house scale.</li>
+<li><strong>Supply-chain posture</strong>: keep the differentiating value in software and the vehicle multi-sourced. The FCC covered-list expansion makes <em>every</em> foreign airframe a US-market risk, which strengthens the case for a stack that ports across <a href="./ros.html">MAVLink/ROS 2</a> vehicles rather than marrying any one of them.</li>
+</ul>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<p>Turnkey and inspection:</p>
+<ul>
+<li><a href="https://www.flyability.com/elios-3">Flyability Elios 3</a>; <a href="https://robotomated.com/explore/drone/flyability-elios-3">reseller spec/price snapshot</a></li>
+<li><a href="https://www.emesent.com/emesent-product/hovermap-series/">Emesent Hovermap series</a>; <a href="https://candrone.com/blogs/news/exploring-the-unreachable-emesent-s-hovermap-st-x-at-candrone-demo-day-2025">ST-X exploration-mode field report</a></li>
+<li><a href="https://www.exyn.com/">Exyn Technologies</a></li>
+<li><a href="https://www.skydio.com/x10/technical-specs">Skydio X10 specs</a>; <a href="https://www.skydio.com/r10">Skydio R10</a></li>
+<li><a href="https://brincdrones.com/lemur-2/">BRINC Lemur 2</a>; <a href="https://uavcoach.com/brinc-lemur-2/">launch coverage</a></li>
+<li><a href="https://cleorobotics.com/">Cleo Robotics Dronut</a></li>
+<li><a href="https://shop.leica-geosystems.com/blk2fly">Leica BLK2FLY</a></li>
+<li><a href="https://www.verity.net/">Verity</a>, <a href="https://www.corvus-robotics.com/">Corvus Robotics</a> (<a href="https://www.roboticstomorrow.com/news/2026/02/09/corvus-robotics-launches-dedicated-cold-chain-drones-for-autonomous-inventory-in-sub-zero-warehouses/26115/">cold-chain launch</a>), <a href="https://www.gather.ai/">Gather AI</a></li>
+</ul>
+<p>Camera drones and SDKs:</p>
+<ul>
+<li><a href="https://enterprise.dji.com/matrice-400">DJI Matrice 400</a>, <a href="https://enterprise.dji.com/matrice-4-series">Matrice 4 series</a>, <a href="https://developer.dji.com/payload-sdk/">Payload SDK</a>, <a href="https://developer.dji.com/onboard-sdk/">Onboard SDK (discontinued)</a></li>
+<li><a href="https://www.autelpilot.com/products/autel-robotics-evo-max-4t-v2">Autel EVO Max 4T V2</a></li>
+<li><a href="https://www.parrot.com/us/drones/anafi-ai/technical-documentation/sdk">Parrot ANAFI Ai SDK program</a>, <a href="https://developer.parrot.com/">developer docs</a></li>
+</ul>
+<p>Open platforms:</p>
+<ul>
+<li><a href="https://www.modalai.com/products/starling-2">ModalAI Starling 2</a></li>
+<li><a href="https://holybro.com/products/px4-development-kit-x500-v2">Holybro X500 v2 PX4 dev kit</a>, <a href="https://holybro.com/products/px4-vision-dev-kit-v1-5">PX4 Vision v1.5</a></li>
+<li><a href="https://www.amovlab.top/products/p600-research-uav-development-platform">AMOVLAB P600</a>, <a href="https://github.com/amov-lab/Prometheus">Prometheus</a>, <a href="https://dronecode.org/amovlab-joins-dronecode-foundation-to-join-effort-in-open-standards-adoption/">Dronecode membership</a></li>
+<li><a href="https://www.visbot.com.cn/">Visbot</a> — OWL research drones (<a href="http://www.visbot.com.cn/index.php/docs-category/owl-owl_series/">docs/user manuals</a>); <a href="https://ht-uav.com/">HT-UAV / Hento Tech</a> — education-channel reseller; <a href="https://www.sohu.com/a/795935735_121124366">third-party spec coverage</a></li>
+<li><a href="https://www.bitcraze.io/">Bitcraze Crazyflie</a></li>
+<li><a href="https://github.com/uzh-rpg/agilicious">Agilicious</a> (<a href="https://www.science.org/doi/10.1126/scirobotics.abl6259">paper</a>); <a href="https://github.com/ctu-mrs/mrs_uav_system">MRS UAV system</a></li>
+<li><a href="https://ros-aerial.github.io/aerial_robotic_landscape/hardware/">ROS aerial-robotics hardware landscape</a></li>
+</ul>
+<p>FPV and Chinese ecosystem:</p>
+<ul>
+<li><a href="https://oscarliang.com/cinewhoop/">Cinewhoop buyer’s guide (Oscar Liang)</a></li>
+<li><a href="https://news.cgtn.com/news/2026-05-22/Shenzhen-s-low-altitude-economy-soars-as-city-leads-global-drone-race-1Nm7IY3OUbm/p.html">Shenzhen low-altitude economy coverage</a>; <a href="https://droneii.com/drone-companies-in-the-chinese-drone-market">Chinese drone market overview</a></li>
+<li><a href="https://uavcoach.com/dji-ban/">DJI ban / FCC covered list status</a></li>
+</ul>
+<p>Handheld capture:</p>
+<ul>
+<li><a href="https://xgrids.com/lixell2">XGRIDS Lixel L2 Pro</a>; <a href="https://epotronic.com/eng/manufacturers/xgrids/">EU reseller pricing</a></li>
+<li><a href="https://shop.leica-geosystems.com/blk2go">Leica BLK2GO</a>, <a href="https://www.navvis.com/">NavVis</a>, <a href="https://matterport.com/">Matterport</a></li>
+</ul>
+<p>Related notes: <a href="./flight_compute_landscape.html">flight compute landscape</a> for boards and the autonomy scorecard, <a href="./voxl2_mini.html">VOXL 2 Mini</a> for the ModalAI deep dive, <a href="./navigation_exploration.html">navigation and exploration</a> for the software this hardware would run, and <a href="./3d_photo_reconstruction.html">3D photo reconstruction</a> for the deliverable.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/xl0\.github\.io\/exploring-edge-perf");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

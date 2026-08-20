@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>ROS, from zero – exploring-edge-perf</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-d63a2c9c8df14b07662b36303925c8cc.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="ROS, from zero – exploring-edge-perf">
+<meta property="og:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta property="og:site_name" content="exploring-edge-perf">
+<meta name="twitter:title" content="ROS, from zero – exploring-edge-perf">
+<meta name="twitter:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta name="twitter:creator" content="@xl0xl0xl0">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">exploring-edge-perf</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="http://github.com/xl0/edge-notes"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/xl0xl0xl0"> <i class="bi bi-twitter" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./ros.html">ROS, from zero</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Research notebooks</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./edge_llm_tps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Theoretical LLM TPS on IQ-9075, Jetson, and NVIDIA GPUs</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./3d_photo_reconstruction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">3D photo reconstruction / indoor navigation research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autonomous_drone_navigation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Autonomous indoor drone navigation / capture research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04_ref_matrials.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">04_ref_matrials.html</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./nvidia_isaac_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NVIDIA Isaac ecosystem research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./voxl2_mini.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI VOXL 2 Mini research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./flight_compute_landscape.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Flight compute and competing ecosystems</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modalai_modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI module reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pixhawk_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Pixhawk ecosystem</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ros.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">ROS, from zero</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./vio_slam.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIO and SLAM</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./navigation_exploration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Navigation and exploration</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./platforms.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Drone platforms</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#what-it-actually-is" id="toc-what-it-actually-is" class="nav-link active" data-scroll-target="#what-it-actually-is">What it actually is</a></li>
+  <li><a href="#the-runtime-model" id="toc-the-runtime-model" class="nav-link" data-scroll-target="#the-runtime-model">The runtime model</a></li>
+  <li><a href="#underneath-dds-and-why-it-leaks" id="toc-underneath-dds-and-why-it-leaks" class="nav-link" data-scroll-target="#underneath-dds-and-why-it-leaks">Underneath: DDS, and why it leaks</a></li>
+  <li><a href="#the-build-system-which-is-the-actual-learning-curve" id="toc-the-build-system-which-is-the-actual-learning-curve" class="nav-link" data-scroll-target="#the-build-system-which-is-the-actual-learning-curve">The build system, which is the actual learning curve</a></li>
+  <li><a href="#distributions-and-the-ubuntu-coupling" id="toc-distributions-and-the-ubuntu-coupling" class="nav-link" data-scroll-target="#distributions-and-the-ubuntu-coupling">Distributions, and the Ubuntu coupling</a></li>
+  <li><a href="#the-packages-that-are-the-real-product" id="toc-the-packages-that-are-the-real-product" class="nav-link" data-scroll-target="#the-packages-that-are-the-real-product">The packages that are the real product</a></li>
+  <li><a href="#where-it-disappoints" id="toc-where-it-disappoints" class="nav-link" data-scroll-target="#where-it-disappoints">Where it disappoints</a></li>
+  <li><a href="#relevance-to-indoor-autonomous-capture" id="toc-relevance-to-indoor-autonomous-capture" class="nav-link" data-scroll-target="#relevance-to-indoor-autonomous-capture">Relevance to indoor autonomous capture</a></li>
+  <li><a href="#a-concrete-starting-path" id="toc-a-concrete-starting-path" class="nav-link" data-scroll-target="#a-concrete-starting-path">A concrete starting path</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content column-page-right" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">ROS, from zero</h1>
+</div>
+
+
+
+<div class="quarto-title-meta column-page-right">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<p>Notes for someone who has never used the Robot Operating System but needs to decide how much of it to adopt. Assumes fluency with Linux, distributed systems and Python/C++, and no ROS-specific knowledge at all.</p>
+<p>Core take: <strong>ROS is not an operating system and not a framework so much as a distribution.</strong> It is a message-passing convention, a build system, and — the part that actually matters — several thousand packages that already implement the tedious parts of robotics. Its reputation for awkwardness is deserved and almost entirely concentrated in the build/versioning layer, not the runtime model.</p>
+<p>Where it stands in 2026:</p>
+<ul>
+<li><strong>ROS 1 is dead.</strong> Noetic, the last release, reached end of life on 31 May 2025. Anything new is ROS 2.</li>
+<li><strong>ROS 2 is on a fixed annual cadence</strong> — a release every 23 May, long-term support in even years.</li>
+<li>The current long-term support release is <strong>Lyrical Luth</strong> (22 May 2026, supported to May 2031, Ubuntu 26.04). The previous one, <strong>Jazzy Jalisco</strong> (Ubuntu 24.04, to May 2029), is what most of the ecosystem actually runs today.</li>
+</ul>
+<section id="what-it-actually-is" class="level2">
+<h2 class="anchored" data-anchor-id="what-it-actually-is">What it actually is</h2>
+<p>Four separable things ship under the name, and it helps to keep them apart because they fail independently:</p>
+<ol type="1">
+<li><strong>A communication model.</strong> Processes (“nodes”) exchange typed messages over named channels (“topics”), plus request-response (“services”) and long-running goals with feedback (“actions”). This part is small, sound, and the reason ROS works.</li>
+<li><strong>An interface definition language.</strong> <code>.msg</code>, <code>.srv</code> and <code>.action</code> files generate C++ and Python types. Message definitions are the real contract between packages — <code>sensor_msgs/Image</code>, <code>geometry_msgs/PoseStamped</code>, <code>nav_msgs/Odometry</code> are effectively industry standard.</li>
+<li><strong>A build and packaging system</strong> — <code>colcon</code>, <code>ament</code>, <code>rosdep</code>, and Debian packages per distribution. This is the part everyone complains about.</li>
+<li><strong>A package ecosystem.</strong> Coordinate-frame bookkeeping, visualization, logging, navigation, manipulation, drivers for most sensors that exist. This is where the value is.</li>
+</ol>
+<p>What it is <em>not</em>: not an operating system, not a real-time system, not a scheduler, and not a framework that owns your program’s main loop in the way that, say, a game engine does. A ROS node is an ordinary process that happens to link a library.</p>
+</section>
+<section id="the-runtime-model" class="level2">
+<h2 class="anchored" data-anchor-id="the-runtime-model">The runtime model</h2>
+<p>A system is a graph of processes discovering each other on the network at runtime. There is no central broker and, since ROS 2, no master process — a node comes up, announces what it publishes and subscribes to, and connections form automatically.</p>
+<p>The primitives:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Primitive</th>
+<th>Semantics</th>
+<th>Use for</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Topic</td>
+<td>anonymous many-to-many publish/subscribe, fire-and-forget</td>
+<td>sensor streams, poses, commands</td>
+</tr>
+<tr class="even">
+<td>Service</td>
+<td>synchronous request/response, one server</td>
+<td>“set this parameter”, quick queries</td>
+</tr>
+<tr class="odd">
+<td>Action</td>
+<td>goal with feedback, cancellable, long-running</td>
+<td>“fly to this pose”, “plan a path”</td>
+</tr>
+<tr class="even">
+<td>Parameter</td>
+<td>per-node typed key-value, settable at runtime</td>
+<td>configuration</td>
+</tr>
+</tbody>
+</table>
+<p>The smallest useful program, in Python:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> rclpy</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rclpy.node <span class="im">import</span> Node</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> geometry_msgs.msg <span class="im">import</span> PoseStamped</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Planner(Node):</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>(<span class="st">'planner'</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.pub <span class="op">=</span> <span class="va">self</span>.create_publisher(PoseStamped, <span class="st">'/goal_pose'</span>, <span class="dv">10</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.create_subscription(PoseStamped, <span class="st">'/odom_pose'</span>, <span class="va">self</span>.on_pose, <span class="dv">10</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> on_pose(<span class="va">self</span>, msg):</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        goal <span class="op">=</span> PoseStamped()</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        goal.header.frame_id <span class="op">=</span> <span class="st">'map'</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>        goal.pose.position.x <span class="op">=</span> msg.pose.position.x <span class="op">+</span> <span class="fl">1.0</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.pub.publish(goal)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>rclpy.init()</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>rclpy.spin(Planner())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>That is the whole model. <code>rclpy</code> for Python, <code>rclcpp</code> for C++, both thin wrappers over a common C layer (<code>rcl</code>), so the concepts transfer exactly.</p>
+<p>Inspection is good and worth knowing early — these are the commands that make a running system legible:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ros2</span> topic list                 <span class="co"># what channels exist</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">ros2</span> topic echo /odom_pose      <span class="co"># dump messages</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">ros2</span> topic hz /camera/image_raw <span class="co"># actual publication rate</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">ros2</span> node info /planner         <span class="co"># what one node is connected to</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">ros2</span> bag record <span class="at">-a</span>              <span class="co"># record everything to disk</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="underneath-dds-and-why-it-leaks" class="level2">
+<h2 class="anchored" data-anchor-id="underneath-dds-and-why-it-leaks">Underneath: DDS, and why it leaks</h2>
+<p>ROS 2 does not implement its own transport. It delegates to <strong>DDS</strong> (Data Distribution Service), an industrial pub/sub middleware standard, through a pluggable abstraction (<code>rmw</code>). Several implementations exist — Fast DDS is the default, Cyclone DDS is the common alternative.</p>
+<p>Consequences that show up in practice:</p>
+<ul>
+<li><strong>Discovery is multicast and chatty.</strong> Nodes find each other by broadcasting. On a busy network, or with many nodes, discovery traffic becomes a real cost, and on networks where multicast is filtered it silently fails to work at all.</li>
+<li><strong><code>ROS_DOMAIN_ID</code> partitions the network.</strong> Two people running ROS on the same LAN with the same domain ID will see each other’s robots. This surprises everyone once.</li>
+<li><strong>Quality of Service settings must match or no data flows.</strong> Publishers and subscribers negotiate reliability (reliable vs best-effort), durability, and history depth. A mismatch is not an error — the connection simply never forms, and <code>ros2 topic list</code> cheerfully shows the topic. This is the single most common way a new ROS 2 system fails, and it is worth internalizing before it costs an afternoon: sensor data is conventionally best-effort, commands and state are reliable.</li>
+</ul>
+<p><strong>Zenoh</strong> is the notable alternative: <code>rmw_zenoh</code> replaces DDS with a protocol designed for exactly the cases DDS handles badly — many nodes, unreliable links, routing across networks. It has been available since Jazzy, is not the default, and is worth knowing about the moment discovery misbehaves. PX4 also ships Zenoh support directly.</p>
+</section>
+<section id="the-build-system-which-is-the-actual-learning-curve" class="level2">
+<h2 class="anchored" data-anchor-id="the-build-system-which-is-the-actual-learning-curve">The build system, which is the actual learning curve</h2>
+<p>A ROS 2 <strong>workspace</strong> is a directory with a <code>src/</code> folder full of packages, built by <code>colcon</code> into <code>build/</code>, <code>install/</code> and <code>log/</code>.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/ws/src <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> ~/ws</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># clone packages into src/</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">rosdep</span> install <span class="at">--from-paths</span> src <span class="at">--ignore-src</span> <span class="at">-y</span>   <span class="co"># pull system dependencies</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">colcon</span> build <span class="at">--symlink-install</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> install/setup.bash                          <span class="co"># required, every shell</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">ros2</span> run my_package my_node</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Things that are surprising coming from ordinary software:</p>
+<ul>
+<li><strong><code>source install/setup.bash</code> is mandatory and stateful.</strong> It mutates <code>AMENT_PREFIX_PATH</code>, <code>PYTHONPATH</code>, <code>LD_LIBRARY_PATH</code> and more. Forgetting it produces “package not found” for a package that plainly exists. Sourcing two different workspaces in one shell produces subtler breakage.</li>
+<li><strong>Binary and source packages mix.</strong> Most packages install as Debian packages from a ROS apt repository, pinned to one distribution; anything modified must be built from source in a workspace that overlays them. The overlay/underlay distinction is the source of most confusing behaviour.</li>
+<li><strong><code>rosdep</code> maps ROS package names to system packages</strong> per OS and distribution. It works well and is invisible until it does not.</li>
+<li><strong>Python packaging is non-standard.</strong> ROS Python packages are built by <code>colcon</code>, not <code>pip</code>, and mixing a virtualenv into a ROS workspace is a known source of pain. Plan to use system Python for ROS nodes.</li>
+</ul>
+<p><strong>Launch files</strong> start and configure many nodes at once. ROS 2 launch is Python (or XML/YAML), which is more powerful and considerably less readable than the ROS 1 XML it replaced:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> launch <span class="im">import</span> LaunchDescription</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> launch_ros.actions <span class="im">import</span> Node</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> generate_launch_description():</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> LaunchDescription([</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>        Node(package<span class="op">=</span><span class="st">'my_pkg'</span>, executable<span class="op">=</span><span class="st">'planner'</span>, name<span class="op">=</span><span class="st">'planner'</span>,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>             parameters<span class="op">=</span>[{<span class="st">'rate_hz'</span>: <span class="fl">10.0</span>}]),</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>        Node(package<span class="op">=</span><span class="st">'my_pkg'</span>, executable<span class="op">=</span><span class="st">'mapper'</span>, name<span class="op">=</span><span class="st">'mapper'</span>),</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    ])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="distributions-and-the-ubuntu-coupling" class="level2">
+<h2 class="anchored" data-anchor-id="distributions-and-the-ubuntu-coupling">Distributions, and the Ubuntu coupling</h2>
+<p>A ROS 2 distribution is a synchronized snapshot of thousands of packages pinned to one Ubuntu release. This coupling dominates practical decisions far more than any feature does.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Distribution</th>
+<th>Released</th>
+<th>EOL</th>
+<th>LTS</th>
+<th>Ubuntu</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Foxy Fitzroy</td>
+<td>Jun 2020</td>
+<td>Jun 2023</td>
+<td>yes</td>
+<td>20.04</td>
+</tr>
+<tr class="even">
+<td>Humble Hawksbill</td>
+<td>May 2022</td>
+<td>May 2027</td>
+<td>yes</td>
+<td>22.04</td>
+</tr>
+<tr class="odd">
+<td>Iron Irwini</td>
+<td>May 2023</td>
+<td>Dec 2024</td>
+<td>no</td>
+<td>22.04</td>
+</tr>
+<tr class="even">
+<td>Jazzy Jalisco</td>
+<td>May 2024</td>
+<td>May 2029</td>
+<td>yes</td>
+<td>24.04</td>
+</tr>
+<tr class="odd">
+<td>Kilted Kaiju</td>
+<td>May 2025</td>
+<td>Dec 2026</td>
+<td>no</td>
+<td>24.04</td>
+</tr>
+<tr class="even">
+<td>Lyrical Luth</td>
+<td>May 2026</td>
+<td>May 2031</td>
+<td>yes</td>
+<td>26.04</td>
+</tr>
+</tbody>
+</table>
+<p>Reading the table:</p>
+<ul>
+<li><strong>Only pick an LTS.</strong> The odd-year releases get ~18 months and no ecosystem ever fully moves to them.</li>
+<li><strong>Jazzy is the pragmatic default today</strong> — supported to 2029, and where most third-party packages currently are. Lyrical Luth is three months old; the ecosystem will take a year to follow.</li>
+<li><strong>The Ubuntu pin explains a great deal of vendor behaviour.</strong> A board stuck on Ubuntu 18.04 gets Foxy, which died in 2023. A Jetson on Ubuntu 22.04 gets Humble. That is why hardware userland age propagates directly into which ROS packages can be used, and why Docker is the universal escape hatch — running a newer ROS in a container over an older host kernel is completely normal practice.</li>
+</ul>
+<p>New in Lyrical Luth and worth noting for GPU work: <code>rosidl::Buffer</code> allows publishing and subscribing without copying between CPU and GPU memory, generalizing what NVIDIA had been doing privately in Isaac ROS.</p>
+</section>
+<section id="the-packages-that-are-the-real-product" class="level2">
+<h2 class="anchored" data-anchor-id="the-packages-that-are-the-real-product">The packages that are the real product</h2>
+<p>Nobody adopts ROS for <code>rclpy</code>. They adopt it for these:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Package</th>
+<th>What it does</th>
+<th>Why it matters</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>tf2</strong></td>
+<td>timestamped tree of coordinate frames, with interpolation</td>
+<td>asks “where was the camera relative to the map at time <em>t</em>” and gets a correct answer</td>
+</tr>
+<tr class="even">
+<td><strong>rosbag2</strong></td>
+<td>record and replay any set of topics</td>
+<td>the single most valuable debugging tool in robotics</td>
+</tr>
+<tr class="odd">
+<td><strong>RViz2</strong></td>
+<td>3D visualization of any standard message type</td>
+<td>see the map, the pose, the point cloud, the plan</td>
+</tr>
+<tr class="even">
+<td><strong>Nav2</strong></td>
+<td>ground-robot navigation stack: costmaps, planners, controllers, recovery behaviours</td>
+<td>the reference for how a navigation system is structured</td>
+</tr>
+<tr class="odd">
+<td><strong>MoveIt 2</strong></td>
+<td>manipulator motion planning</td>
+<td>irrelevant to aircraft, dominant elsewhere</td>
+</tr>
+<tr class="even">
+<td><strong>robot_state_publisher / URDF</strong></td>
+<td>robot geometry description and joint kinematics</td>
+<td>feeds tf2</td>
+</tr>
+<tr class="odd">
+<td><strong>image_transport</strong></td>
+<td>compressed image topics</td>
+<td>raw camera streams saturate links otherwise</td>
+</tr>
+<tr class="even">
+<td><strong>MAVROS</strong></td>
+<td>MAVLink bridge to PX4 and ArduPilot</td>
+<td>the traditional aerial entry point</td>
+</tr>
+<tr class="odd">
+<td><strong>micro-ROS</strong></td>
+<td>ROS 2 nodes on microcontrollers</td>
+<td>built on the same XRCE-DDS as the PX4 bridge</td>
+</tr>
+</tbody>
+</table>
+<p><strong>tf2 deserves special attention</strong> because it solves a problem that is genuinely hard and easy to underestimate. Every sensor reading is in some frame, every frame moves relative to others, and every measurement has a timestamp that does not line up with the others. tf2 maintains the whole tree with time history and interpolates. Systems built without it end up reimplementing it badly.</p>
+<p><strong>rosbag2 is the reason to use ROS even if nothing else appeals.</strong> Recording every topic during a flight and replaying it deterministically at the desk, into a modified planner, is a workflow that is hard to give up once used.</p>
+</section>
+<section id="where-it-disappoints" class="level2">
+<h2 class="anchored" data-anchor-id="where-it-disappoints">Where it disappoints</h2>
+<ul>
+<li><strong>Not real time.</strong> ROS 2 was designed with real-time in mind and can be run that way with effort — a preemptible kernel, careful executors, no allocation in the loop — but the default experience is a garbage-collected Python node scheduled by Linux. Nothing about flight-critical control belongs here; that is what the flight controller is for.</li>
+<li><strong>The QoS trap</strong>, as above. Silent non-delivery is a terrible default failure mode.</li>
+<li><strong>Python performance is a real ceiling.</strong> <code>rclpy</code> serialization and the executor overhead make high-rate image or point-cloud handling in Python a losing proposition. Prototype in Python, move hot paths to C++.</li>
+<li><strong>Version fragility.</strong> A package that builds on Humble may not build on Jazzy; the ecosystem’s answer is a container per distribution, which is workable but makes “just install it” rarely true.</li>
+<li><strong>Discovery does not scale gracefully</strong> to large node counts or lossy networks, which is precisely what Zenoh exists to address.</li>
+<li><strong>Documentation quality varies enormously</strong> between core packages (good) and the long tail (a README and a hope).</li>
+<li><strong>Security is opt-in and rarely on.</strong> SROS 2 exists; almost nobody enables it.</li>
+</ul>
+<p>The general shape of the criticism: the runtime model is good, the tooling is mediocre, and the ecosystem is worth the tooling.</p>
+</section>
+<section id="relevance-to-indoor-autonomous-capture" class="level2">
+<h2 class="anchored" data-anchor-id="relevance-to-indoor-autonomous-capture">Relevance to indoor autonomous capture</h2>
+<p>Where ROS 2 does and does not earn its place in a drone project of this kind:</p>
+<p><strong>Strong reasons to use it</strong></p>
+<ul>
+<li><strong>It is the lingua franca of everything adjacent.</strong> Isaac Sim publishes ROS 2 topics, Pegasus supports ROS 2 launch, PX4 speaks it natively through uXRCE-DDS, ModalAI ships an MPA-to-ROS 2 bridge, and NVIDIA’s perception packages are ROS 2 nodes. Not using it means writing adapters to all of them.</li>
+<li><strong>The simulator and the vehicle look identical to the planner.</strong> A node consuming <code>nav_msgs/Odometry</code> and publishing goals does not know whether the pose came from Isaac Sim, a hardware-in-the-loop bridge or a real visual-inertial system. This is the property that makes simulation-first development honest rather than theatrical.</li>
+<li><strong>rosbag2 for capture datasets.</strong> Record a flight, replay it into successive versions of an exploration policy, compare outcomes on identical input.</li>
+<li><strong>tf2 for the camera-pose bookkeeping</strong> that photogrammetry requires anyway.</li>
+</ul>
+<p><strong>Where it does not help</strong></p>
+<ul>
+<li><strong>It supplies no autonomy for aircraft.</strong> Nav2 is a ground-robot stack — 2D costmaps, footprints, recovery behaviours built around a differential-drive world view. It is worth reading as an architecture, not adopting as a dependency.</li>
+<li><strong>It adds a distribution/Ubuntu constraint</strong> to every piece of hardware under consideration, which is a real cost when the candidate boards ship 18.04 and 22.04 userlands.</li>
+<li><strong>Nothing about ROS decides where to fly.</strong> As with the flight controller, the interesting layer is the part nobody supplies.</li>
+</ul>
+<p>The pragmatic position: use ROS 2 as the integration bus and the data-recording layer, keep the exploration policy as ordinary Python or C++ behind a thin node wrapper, and do not let the framework dictate the algorithm’s structure.</p>
+</section>
+<section id="a-concrete-starting-path" class="level2">
+<h2 class="anchored" data-anchor-id="a-concrete-starting-path">A concrete starting path</h2>
+<p>For someone starting from nothing, in order:</p>
+<ol type="1">
+<li><strong>Install Jazzy on Ubuntu 24.04</strong>, or run it in Docker on any host. Do not start on Lyrical Luth until third-party packages have caught up; do not start on anything non-LTS.</li>
+<li><strong>Do the official talker/listener tutorial</strong>, then immediately do the inspection commands above against it — <code>topic list</code>, <code>topic echo</code>, <code>node info</code>, <code>bag record</code>. Understanding the graph tooling is worth more than understanding the API.</li>
+<li><strong>Write one node that subscribes to something and publishes something</strong>, in Python, in a workspace built with <code>colcon</code>. The build system is the actual hurdle; get it over with on a trivial program.</li>
+<li><strong>Learn tf2 properly</strong>, specifically <code>lookup_transform</code> with a timestamp and what the failure modes mean. Most subtle robotics bugs are frame or timing bugs.</li>
+<li><strong>Record and replay a bag.</strong> This closes the loop on the workflow that makes the rest worthwhile.</li>
+<li>Only then look at PX4’s ROS 2 integration and the <code>px4_ros2</code> interface library, which assume all of the above.</li>
+</ol>
+<p>Estimated time to competence for an experienced engineer: a day to be productive, a week to stop being surprised, and the remaining friction is permanent and lives in the build system.</p>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<p>Core:</p>
+<ul>
+<li><a href="https://docs.ros.org/en/jazzy/">ROS 2 documentation</a> — Jazzy branch is the practical default; the tutorials are the ones to follow.</li>
+<li><a href="https://endoflife.date/ros-2">ROS 2 releases and support dates</a></li>
+<li><a href="https://discourse.openrobotics.org/t/ros-2-lyrical-luth-released/55021">ROS 2 Lyrical Luth release announcement</a></li>
+<li><a href="https://discourse.openrobotics.org/t/ros-noetic-end-of-life-may-31-2025/43160">ROS Noetic end of life</a></li>
+</ul>
+<p>Middleware:</p>
+<ul>
+<li><a href="https://github.com/ros2/rmw_zenoh">rmw_zenoh</a> — the non-DDS alternative</li>
+<li><a href="https://docs.px4.io/main/en/middleware/zenoh">PX4 Zenoh support</a></li>
+</ul>
+<p>Aerial integration:</p>
+<ul>
+<li><a href="https://docs.px4.io/main/en/ros2/">PX4 ROS 2 user guide</a></li>
+<li><a href="https://docs.px4.io/main/en/ros2/px4_ros2_interface_lib">PX4 ROS 2 Interface Library</a></li>
+<li><a href="https://github.com/mavlink/mavros">MAVROS</a></li>
+</ul>
+<p>Ecosystem:</p>
+<ul>
+<li><a href="https://docs.nav2.org/">Nav2</a> — read for architecture, not adoption</li>
+<li><a href="https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Tf2.html">tf2</a></li>
+<li><a href="https://github.com/ros2/rosbag2">rosbag2</a></li>
+</ul>
+<p>Related notes: <a href="./pixhawk_ecosystem.html">the Pixhawk ecosystem</a> for what sits below ROS, and <a href="./nvidia_isaac_ecosystem.html">the NVIDIA Isaac ecosystem</a> for what sits beside it.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/xl0\.github\.io\/exploring-edge-perf");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

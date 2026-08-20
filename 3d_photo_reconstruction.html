@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>3D photo reconstruction / indoor navigation research notes – exploring-edge-perf</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-d63a2c9c8df14b07662b36303925c8cc.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="3D photo reconstruction / indoor navigation research notes – exploring-edge-perf">
+<meta property="og:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta property="og:site_name" content="exploring-edge-perf">
+<meta name="twitter:title" content="3D photo reconstruction / indoor navigation research notes – exploring-edge-perf">
+<meta name="twitter:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta name="twitter:creator" content="@xl0xl0xl0">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">exploring-edge-perf</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="http://github.com/xl0/edge-notes"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/xl0xl0xl0"> <i class="bi bi-twitter" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./3d_photo_reconstruction.html">3D photo reconstruction / indoor navigation research notes</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Research notebooks</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./edge_llm_tps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Theoretical LLM TPS on IQ-9075, Jetson, and NVIDIA GPUs</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./3d_photo_reconstruction.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">3D photo reconstruction / indoor navigation research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autonomous_drone_navigation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Autonomous indoor drone navigation / capture research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04_ref_matrials.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">04_ref_matrials.html</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./nvidia_isaac_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NVIDIA Isaac ecosystem research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./voxl2_mini.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI VOXL 2 Mini research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./flight_compute_landscape.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Flight compute and competing ecosystems</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modalai_modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI module reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pixhawk_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Pixhawk ecosystem</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ros.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ROS, from zero</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./vio_slam.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIO and SLAM</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./navigation_exploration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Navigation and exploration</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./platforms.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Drone platforms</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#core-distinction" id="toc-core-distinction" class="nav-link active" data-scroll-target="#core-distinction">Core distinction</a></li>
+  <li><a href="#main-approaches" id="toc-main-approaches" class="nav-link" data-scroll-target="#main-approaches">Main approaches</a>
+  <ul class="collapse">
+  <li><a href="#matterport-virtual-tour-style" id="toc-matterport-virtual-tour-style" class="nav-link" data-scroll-target="#matterport-virtual-tour-style">1. Matterport / virtual-tour style</a></li>
+  <li><a href="#photogrammetry-slam-mesh" id="toc-photogrammetry-slam-mesh" class="nav-link" data-scroll-target="#photogrammetry-slam-mesh">2. Photogrammetry / SLAM mesh</a></li>
+  <li><a href="#neural-rendering-nerf-and-3d-gaussian-splatting" id="toc-neural-rendering-nerf-and-3d-gaussian-splatting" class="nav-link" data-scroll-target="#neural-rendering-nerf-and-3d-gaussian-splatting">3. Neural rendering: NeRF and 3D Gaussian Splatting</a></li>
+  <li><a href="#relation-between-photogrammetry-and-neural-rendering" id="toc-relation-between-photogrammetry-and-neural-rendering" class="nav-link" data-scroll-target="#relation-between-photogrammetry-and-neural-rendering">Relation between photogrammetry and neural rendering</a></li>
+  </ul></li>
+  <li><a href="#sota-indoor-reconstruction-research-to-track" id="toc-sota-indoor-reconstruction-research-to-track" class="nav-link" data-scroll-target="#sota-indoor-reconstruction-research-to-track">SOTA indoor / reconstruction research to track</a></li>
+  <li><a href="#datasets-benchmarks" id="toc-datasets-benchmarks" class="nav-link" data-scroll-target="#datasets-benchmarks">Datasets / benchmarks</a></li>
+  <li><a href="#likely-best-architecture-for-house-scale-product" id="toc-likely-best-architecture-for-house-scale-product" class="nav-link" data-scroll-target="#likely-best-architecture-for-house-scale-product">Likely best architecture for house-scale product</a></li>
+  <li><a href="#product-tiers" id="toc-product-tiers" class="nav-link" data-scroll-target="#product-tiers">Product tiers</a>
+  <ul class="collapse">
+  <li><a href="#tier-a-practical-baseline" id="toc-tier-a-practical-baseline" class="nav-link" data-scroll-target="#tier-a-practical-baseline">Tier A: practical baseline</a></li>
+  <li><a href="#tier-b-photoreal-controlled-navigation" id="toc-tier-b-photoreal-controlled-navigation" class="nav-link" data-scroll-target="#tier-b-photoreal-controlled-navigation">Tier B: photoreal controlled navigation</a></li>
+  <li><a href="#tier-c-free-walk-indoor-digital-twin" id="toc-tier-c-free-walk-indoor-digital-twin" class="nav-link" data-scroll-target="#tier-c-free-walk-indoor-digital-twin">Tier C: free-walk indoor digital twin</a></li>
+  </ul></li>
+  <li><a href="#capture-constraints" id="toc-capture-constraints" class="nav-link" data-scroll-target="#capture-constraints">Capture constraints</a></li>
+  <li><a href="#hard-problems" id="toc-hard-problems" class="nav-link" data-scroll-target="#hard-problems">Hard problems</a></li>
+  <li><a href="#research-threads-keywords" id="toc-research-threads-keywords" class="nav-link" data-scroll-target="#research-threads-keywords">Research threads / keywords</a></li>
+  <li><a href="#early-recommendation" id="toc-early-recommendation" class="nav-link" data-scroll-target="#early-recommendation">Early recommendation</a></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content column-page-right" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">3D photo reconstruction / indoor navigation research notes</h1>
+</div>
+
+
+
+<div class="quarto-title-meta column-page-right">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<p>Goal: understand practical + SOTA (state-of-the-art) options for turning many indoor house photos/videos into a Google-Maps-like navigable environment: room-scale navigation, between-room transitions, photoreal visuals, optional metric geometry.</p>
+<section id="core-distinction" class="level2">
+<h2 class="anchored" data-anchor-id="core-distinction">Core distinction</h2>
+<p>“Photo stitching” is not one problem. Current systems usually combine several layers:</p>
+<ul>
+<li><strong>Pose layer</strong>: camera locations/orientations from SfM (Structure from Motion; recover camera poses + sparse 3D points from overlapping photos), SLAM (Simultaneous Localization and Mapping; track device pose while building map), VIO (Visual-Inertial Odometry; estimate motion from camera + inertial sensor), ARKit/ARCore phone augmented-reality tracking, or LiDAR (Light Detection and Ranging; active depth sensing).</li>
+<li><strong>Visual layer</strong>: panoramas, textured mesh, NeRF (Neural Radiance Field; neural scene representation for novel-view rendering), or 3DGS (3D Gaussian Splatting; explicit Gaussian blobs rendered by rasterization).</li>
+<li><strong>Geometry layer</strong>: mesh/depth/floorplan/walls/doors/floors for collision, scale, measurement.</li>
+<li><strong>Navigation layer</strong>: waypoint graph, room/portal graph, navmesh.</li>
+<li><strong>Semantic layer</strong>: rooms, doors, furniture, walkable regions, labels.</li>
+</ul>
+<p>Important: photoreal rendering alone does not solve navigation. 3DGS/NeRF can look good while geometry remains fuzzy/non-metric.</p>
+</section>
+<section id="main-approaches" class="level2">
+<h2 class="anchored" data-anchor-id="main-approaches">Main approaches</h2>
+<section id="matterport-virtual-tour-style" class="level3">
+<h3 class="anchored" data-anchor-id="matterport-virtual-tour-style">1. Matterport / virtual-tour style</h3>
+<p>Representation: discrete 360° panoramas connected by clickable waypoints, often with floorplan/dollhouse mesh.</p>
+<p>Commercial references / demos:</p>
+<ul>
+<li><p><a href="https://matterport.com/">Matterport</a> — commercial baseline; strong example of pano graph + dollhouse UX (user experience). Demo: <a href="https://my.matterport.com/show/?m=jm5WwEA3HUN&amp;log=0&amp;help=0&amp;nt=0&amp;play=1&amp;qs=0&amp;brand=1&amp;dh=1&amp;tour=1&amp;gt=1&amp;hr=1&amp;mls=0&amp;mt=1&amp;tagNav=1&amp;pin=1&amp;portal=1&amp;f=1&amp;fp=1&amp;nozoom=0&amp;search=1&amp;wh=1&amp;kb=1&amp;lp=0&amp;title=0&amp;tourcta=1&amp;vr=1">Matterport sample tour</a>.</p>
+<iframe width="853" height="480" src="https://my.matterport.com/show/?m=jm5WwEA3HUN&amp;log=0&amp;help=0&amp;nt=0&amp;play=1&amp;qs=0&amp;brand=1&amp;dh=1&amp;tour=1>=1&amp;hr=1&amp;mls=0&amp;mt=1&amp;tagNav=1&amp;pin=1&amp;portal=1&amp;f=1&amp;fp=1&amp;nozoom=0&amp;search=1&amp;wh=1&amp;kb=1&amp;lp=0&amp;title=0&amp;tourcta=1&amp;vr=1" frameborder="0" allowfullscreen="" allow="xr-spatial-tracking; fullscreen; autoplay">
+</iframe></li>
+<li><p><a href="https://poly.cam/">Polycam</a> — mobile-first consumer capture app; LiDAR/photo modes.</p></li>
+<li><p><a href="https://www.zillow.com/3d-home/">Zillow 3D Home</a> — simple real-estate pano-tour UX reference.</p></li>
+</ul>
+<p>Open-source viewers / tour builders. 360 panorama tours are mature. Limitation: usually click-to-jump between pano nodes, not Matterport-like spatial/free-walk interpolation.</p>
+<ul>
+<li><a href="https://www.marzipano.net/">Marzipano</a> / <a href="https://github.com/google/marzipano">GitHub</a> — strongest open-source baseline for multi-resolution web pano tours.</li>
+<li><a href="https://pannellum.org/">Pannellum</a> / <a href="https://github.com/mpetroff/pannellum">GitHub</a> — lightweight MIT-licensed web panorama viewer with scene hotspots/tour configs.</li>
+<li><a href="https://photo-sphere-viewer.js.org/">Photo Sphere Viewer</a> / <a href="https://github.com/mistic100/Photo-Sphere-Viewer">GitHub</a> — Three.js-based 360° viewer; good plugin ecosystem.</li>
+<li><a href="https://github.com/un0btanium/360-panorama-tour-viewer-and-editor">360 panorama tour viewer/editor</a> — Marzipano-based open-source editor/viewer; useful if editor UX matters.</li>
+</ul>
+<p>Pros:</p>
+<ul>
+<li>Most robust product path.</li>
+<li>Browser-friendly.</li>
+<li>Navigation UX solved: node-to-node movement.</li>
+<li>Good for real estate / documentation.</li>
+<li>Avoids many free-view reconstruction artifacts.</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>Not true continuous free-walk 3D.</li>
+<li>Parallax wrong between panorama nodes.</li>
+<li>Usually needs capture discipline or dedicated hardware.</li>
+</ul>
+<p>Use when reliability matters more than full 6DoF (six degrees of freedom; position <code>x,y,z</code> + orientation <code>roll,pitch,yaw</code>) movement.</p>
+</section>
+<section id="photogrammetry-slam-mesh" class="level3">
+<h3 class="anchored" data-anchor-id="photogrammetry-slam-mesh">2. Photogrammetry / SLAM mesh</h3>
+<p>Photogrammetry is mostly <strong>solving a giant jigsaw puzzle of where cameras were</strong>.</p>
+<p>Each photo is a 2D projection of same 3D world. If same chair corner appears in 5 photos, system can ask: “where could these 5 cameras have been so this one 3D point lands at exactly these 5 pixel positions?” Do that for thousands/millions of points -&gt; recover camera poses and a sparse 3D skeleton of room.</p>
+<ul>
+<li>same physical point seen from multiple views gives a ray from each camera;</li>
+<li>correct 3D point lies where rays intersect / nearly intersect;</li>
+<li>correct camera poses are ones that make all those intersections consistent;</li>
+<li>bundle adjustment nudges every camera + point until projected points land back on observed pixels.</li>
+</ul>
+<p>Once cameras are known, dense geometry becomes easier: for each pixel, search along its camera ray for depth that makes nearby photos agree. Repeat over many images -&gt; depth maps / dense point cloud. Fuse those depths -&gt; mesh. Then paste original photos back onto mesh as texture.</p>
+<p>SLAM is same family but online: while walking, estimate current camera motion and map at same time. VIO adds an IMU (inertial measurement unit; accelerometer/gyroscope motion cues). RGB-D (red-green-blue plus depth; color image plus depth image) and LiDAR add direct depth. Those extra sensors are extremely useful indoors because they give scale and stop drift.</p>
+<p>Key mental split:</p>
+<ul>
+<li><strong>SfM/SLAM</strong> answers: where was each camera?</li>
+<li><strong>MVS (Multi-View Stereo) / depth fusion</strong> answers: where are surfaces?</li>
+<li><strong>texturing</strong> answers: what color should surfaces have?</li>
+<li><strong>navmesh/waypoints</strong> answer: where may user walk?</li>
+</ul>
+<p>That last part is not output by photogrammetry. A pretty mesh can still have noisy floors, fused chair legs, holes, fake mirror geometry. Product needs separate cleanup/semantics for walkable areas, doors, rooms.</p>
+<p>Indoor gotcha: algorithms want parallax + texture. Houses give blank walls, repeated doors, mirrors, glass, narrow corridors. More photos helps only if they add new viewpoints and stable features. RGB-D/VIO often helps more than bigger models.</p>
+<p>Commercial tools worth knowing:</p>
+<ul>
+<li><a href="https://www.capturingreality.com/">RealityCapture</a> — strong commercial photogrammetry.</li>
+<li><a href="https://www.agisoft.com/">Agisoft Metashape</a> — commercial photogrammetry.</li>
+<li><a href="https://developer.apple.com/augmented-reality/arkit/">iPhone/iPad LiDAR + ARKit</a> — practical mobile RGB-D/VIO capture source.</li>
+<li><a href="https://developers.google.com/ar">ARCore</a> — Android AR/VIO stack.</li>
+</ul>
+<p>Open-source tools:</p>
+<ul>
+<li><a href="https://colmap.github.io/">COLMAP</a> / <a href="https://github.com/colmap/colmap">GitHub</a> — <strong>offline</strong> SfM/MVS baseline; common input to NeRF/3DGS pipelines. Can process ordered video frames, but not intended as live tracker.</li>
+<li><a href="https://github.com/openMVG/openMVG">OpenMVG</a> — <strong>offline</strong> multi-view geometry/SfM framework.</li>
+<li><a href="https://github.com/cdcseacave/openMVS">OpenMVS</a> — <strong>offline</strong> dense reconstruction from SfM outputs; often paired with OpenMVG.</li>
+<li><a href="https://github.com/alicevision/Meshroom">Meshroom / AliceVision</a> — <strong>offline</strong> node-based photogrammetry pipeline.</li>
+<li><a href="https://github.com/OpenDroneMap/ODM">OpenDroneMap</a> — <strong>offline</strong> photogrammetry stack; outdoor/drone-oriented but useful pipeline reference.</li>
+<li><a href="https://github.com/UZ-SLAMLab/ORB_SLAM3">ORB-SLAM3</a> — <strong>real-time/online tracking</strong> visual/visual-inertial SLAM research baseline using ORB (Oriented FAST and Rotated BRIEF; efficient local image features). Map quality is tracking-grade, not polished product mesh.</li>
+<li><a href="https://github.com/introlab/rtabmap">RTAB-Map</a> — <strong>real-time/online</strong> RTAB-Map (Real-Time Appearance-Based Mapping; graph-based SLAM); practical RGB-D, stereo, LiDAR robotics baseline. Can also optimize/export maps offline after capture.</li>
+<li><a href="https://github.com/MIT-SPARK/Kimera">Kimera</a> — <strong>real-time/online research stack</strong> for metric-semantic SLAM. Heavier integration burden; closer to robotics than turnkey photogrammetry.</li>
+</ul>
+<p>Rule of thumb: <strong>SfM/MVS/photogrammetry tools are offline and produce better final assets; SLAM/VIO tools are online and produce live poses/maps, often needing post-processing for nice meshes.</strong></p>
+<p>Pros:</p>
+<ul>
+<li>Produces explicit geometry.</li>
+<li>Useful for measurements, floorplan, collision, room layout.</li>
+<li>Can feed game-engine/web navigation.</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>Indoor scenes are hard: blank walls, repetition, mirrors, glass, glossy surfaces, narrow corridors.</li>
+<li>Photoreal quality often worse than source photos/3DGS.</li>
+<li>Mesh cleanup can be required.</li>
+</ul>
+<p>Use when metric structure and navigability matter.</p>
+</section>
+<section id="neural-rendering-nerf-and-3d-gaussian-splatting" class="level3">
+<h3 class="anchored" data-anchor-id="neural-rendering-nerf-and-3d-gaussian-splatting">3. Neural rendering: NeRF and 3D Gaussian Splatting</h3>
+<p>Current visual SOTA for practical use is <strong>3DGS (3D Gaussian Splatting)</strong> more than vanilla NeRF.</p>
+<p>Pipeline: photos/video -&gt; camera poses from SfM/SLAM -&gt; optimize radiance representation -&gt; real-time novel-view rendering.</p>
+<p>Core papers / project pages:</p>
+<ul>
+<li><a href="https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/">3D Gaussian Splatting for Real-Time Radiance Field Rendering</a> — original 3DGS paper/project.</li>
+<li><a href="https://github.com/graphdeco-inria/gaussian-splatting">3DGS official code</a> — reference implementation.</li>
+<li><a href="https://github.com/nerfstudio-project/nerfstudio">Nerfstudio</a> — open toolkit for NeRF/3DGS workflows.</li>
+<li><a href="https://docs.nerf.studio/nerfology/methods/splat.html">Nerfstudio Splatfacto docs</a> — practical 3DGS model in Nerfstudio.</li>
+<li><a href="https://github.com/nerfstudio-project/gsplat">gsplat</a> — CUDA (NVIDIA GPU programming/runtime stack) rasterization library used by Nerfstudio; good base for custom 3DGS training/rendering.</li>
+<li><a href="https://github.com/NVlabs/instant-ngp">instant-ngp</a> — older but important real-time NeRF/hash-grid baseline.</li>
+</ul>
+<p>Open-source 3DGS implementations / pipelines:</p>
+<ul>
+<li><a href="https://github.com/pierotofy/opensplat">OpenSplat</a> — C++ 3DGS pipeline; takes COLMAP/OpenSfM/OpenMVG/Nerfstudio-style inputs.</li>
+<li><a href="https://github.com/yzslab/gaussian-splatting-lightning">gaussian-splatting-lightning</a> — PyTorch Lightning research framework.</li>
+<li><a href="https://github.com/Gaussian-Splatting-Toolkit/Gaussian-Splatting-Toolkit">Gaussian Splatting Toolkit</a> — toolkit for training/evaluation variants.</li>
+<li><a href="https://github.com/VincentChoi33/gaussian-splatting-pipeline">Gaussian splatting pipeline</a> — end-to-end video/photos -&gt; COLMAP/LightGlue -&gt; compressed splats; useful pipeline reference.</li>
+<li><a href="https://github.com/NVlabs/InstantSplat">InstantSplat</a> — sparse-view/generalizable splatting research code.</li>
+<li><a href="https://github.com/wangys16/freesplat">FreeSplat</a> — feed-forward/generalizable 3DGS research thread.</li>
+</ul>
+<p>Web viewers / deployment:</p>
+<ul>
+<li><a href="https://github.com/playcanvas/super-splat">SuperSplat</a> — PlayCanvas open-source 3DGS editor.</li>
+<li><a href="https://github.com/playcanvas/supersplat-viewer">SuperSplat Viewer</a> — self-hostable web viewer for splats.</li>
+<li><a href="https://developer.playcanvas.com/user-manual/gaussian-splatting/editing/supersplat/">SuperSplat docs</a> — useful practical docs.</li>
+<li><a href="https://antimatter15.com/splat/">Kevin Kwok WebGL splat viewer</a> / <a href="https://github.com/antimatter15/splat">GitHub</a> — minimal browser splat viewer reference.</li>
+</ul>
+<p>Pros:</p>
+<ul>
+<li>Very photorealistic.</li>
+<li>3DGS renders fast, often real-time.</li>
+<li>Better practical latency than classic NeRF.</li>
+<li>Handles view-dependent appearance better than textured mesh.</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>Needs good poses or joint pose optimization.</li>
+<li>Geometry can be fuzzy / non-physical.</li>
+<li>Navigation/collision not directly available.</li>
+<li>Large houses need chunking/streaming.</li>
+<li>Browser/mobile renderer less mature than pano tours.</li>
+<li>Mirrors/glass/lighting changes remain hard.</li>
+</ul>
+<p>Use for visuals, not as sole navigation substrate.</p>
+</section>
+<section id="relation-between-photogrammetry-and-neural-rendering" class="level3">
+<h3 class="anchored" data-anchor-id="relation-between-photogrammetry-and-neural-rendering">Relation between photogrammetry and neural rendering</h3>
+<p>Photogrammetry/SLAM and neural rendering are not competing replacements. Usually they are <strong>two stages in same pipeline</strong>.</p>
+<p>Photogrammetry/SLAM first answers: <strong>where were cameras?</strong> Neural rendering then asks: <strong>given those cameras and images, what scene representation best reproduces the photos from new viewpoints?</strong></p>
+<p>Typical 3DGS/NeRF pipeline:</p>
+<ol type="1">
+<li>Capture photos/video.</li>
+<li>Run SfM/SLAM to estimate camera poses.</li>
+<li>Initialize sparse geometry from SfM point cloud or RGB-D depth.</li>
+<li>Optimize neural/gaussian scene so rendered views match source photos.</li>
+<li>Render novel views from new camera positions.</li>
+</ol>
+<p>So COLMAP often appears inside neural-rendering workflows. Nerfstudio, original 3DGS code, OpenSplat, etc. commonly take COLMAP outputs: camera intrinsics, camera extrinsics, sparse points.</p>
+<p>Key difference is output:</p>
+<ul>
+<li><strong>Photogrammetry output</strong>: mesh/point cloud/depth. Explicit geometry. Good for measurement, collision, floorplans, navmesh. Looks okay, often not photoreal.</li>
+<li><strong>Neural-rendering output</strong>: radiance field / gaussian splats. Optimized for making images. Looks great. Geometry may be approximate, fuzzy, or non-physical.</li>
+</ul>
+<p>Mental model:</p>
+<blockquote class="blockquote">
+<p>Photogrammetry is surveying. Neural rendering is cinematography.</p>
+</blockquote>
+<p>Surveying gives map/structure. Cinematography gives convincing views. For indoor navigation product, likely need both: photogrammetry/SLAM for pose + coarse walkable geometry; 3DGS/NeRF for visual layer.</p>
+<p>Important nuance: some newer systems blur boundary. Gaussian SLAM, pose-free 3DGS, RGB-D 3DGS, SDF+Gaussian hybrids jointly optimize pose, geometry, and appearance. But product-wise same split remains useful: <strong>metric/navigation layer</strong> vs <strong>photoreal rendering layer</strong>.</p>
+</section>
+</section>
+<section id="sota-indoor-reconstruction-research-to-track" class="level2">
+<h2 class="anchored" data-anchor-id="sota-indoor-reconstruction-research-to-track">SOTA indoor / reconstruction research to track</h2>
+<p>Indoor-specific 3DGS/SfM/SLAM is active. Useful papers/projects:</p>
+<ul>
+<li><a href="https://ucwxb.github.io/OmniIndoor3D/">OmniIndoor3D</a> / <a href="https://arxiv.org/abs/2505.20610">arXiv</a> / <a href="https://github.com/ucwxb/OmniIndoor3D">GitHub</a> — indoor 3DGS with appearance + geometry + panoptic reconstruction from consumer RGB-D.</li>
+<li><a href="https://openaccess.thecvf.com/content/CVPR2025/papers/Ruan_IndoorGS_Geometric_Cues_Guided_Gaussian_Splatting_for_Indoor_Scene_Reconstruction_CVPR_2025_paper.pdf">IndoorGS</a> — geometric cues guided 3DGS for indoor scenes; tackles low texture/repetition.</li>
+<li><a href="https://openreview.net/forum?id=SoPSI570Ap">NopeRoomGS</a> — pose-free indoor 3DGS optimization; useful if capture poses are unreliable.</li>
+<li><a href="https://li-yuetao.github.io/ActiveSplat/">ActiveSplat</a> / <a href="https://arxiv.org/abs/2410.21955">arXiv</a> — active indoor reconstruction using Gaussian splatting + planning.</li>
+<li><a href="https://arxiv.org/pdf/2503.22986">FreeSplat++</a> — efficient/generalizable indoor whole-scene 3DGS.</li>
+<li><a href="https://repo-sam.inria.fr/nerphys/on-the-fly-nvs/">On-the-fly reconstruction for large-scale NVS (Novel View Synthesis; render views from camera poses not present in source photos) from unposed images</a> — unposed image reconstruction + 3DGS direction.</li>
+</ul>
+<p>Gaussian SLAM / RGB-D reconstruction:</p>
+<ul>
+<li><a href="https://github.com/muskie82/MonoGS">MonoGS</a> — monocular/stereo/RGB-D Gaussian Splatting SLAM; CVPR (Computer Vision and Pattern Recognition conference) 2024 highlight.</li>
+<li><a href="https://github.com/google-research/Splat-SLAM">Splat-SLAM</a> — RGB-only SLAM with 3D Gaussian representation and globally optimized dense geometry/rendering.</li>
+<li><a href="https://github.com/gaus-slam/gaus-slam">GauS-SLAM</a> — dense RGB-D SLAM with Gaussian surfels.</li>
+<li><a href="https://github.com/Lab-of-AI-and-Robotics/GS-ICP-SLAM">GS-ICP-SLAM</a> — RGB-D Gaussian Splatting SLAM with ICP (Iterative Closest Point; point-cloud/depth-frame alignment) style tracking.</li>
+<li><a href="https://github.com/MisEty/GPS-SLAM">GPS-SLAM</a> — Gaussian + SDF (signed distance field; volumetric geometry storing distance to nearest surface) hybrid SLAM; interesting because SDF helps geometry while Gaussians help appearance.</li>
+<li><a href="https://github.com/pengchongH/VTGaussian-SLAM">VTGaussian-SLAM</a> — RGB-D SLAM for large indoor scenes with view-tied Gaussians.</li>
+<li><a href="https://github.com/yanyan-li/4DGS-SLAM">4DGS-SLAM</a> — dynamic-scene Gaussian SLAM.</li>
+<li><a href="https://github.com/leaner-forever/SEGS-SLAM">SEGS-SLAM</a> — structure-enhanced 3DGS SLAM using ORB-SLAM3.</li>
+<li><a href="https://github.com/DrLi-Ming/DenseSplat">DenseSplat</a> — sparse-keyframe densification with 3DGS/NeRF priors.</li>
+</ul>
+</section>
+<section id="datasets-benchmarks" class="level2">
+<h2 class="anchored" data-anchor-id="datasets-benchmarks">Datasets / benchmarks</h2>
+<p>Useful for testing indoor reconstruction assumptions before collecting houses:</p>
+<ul>
+<li><a href="http://www.scan-net.org/">ScanNet</a> — RGB-D indoor scans with semantic labels.</li>
+<li><a href="https://kaldir.vc.in.tum.de/scannetpp/">ScanNet++</a> — higher-fidelity RGB-D / DSLR (digital single-lens reflex camera) indoor dataset.</li>
+<li><a href="https://niessner.github.io/Matterport/">Matterport3D</a> — large-scale indoor RGB-D panoramas/mesh dataset; common for navigation/semantic tasks.</li>
+<li><a href="https://github.com/facebookresearch/Replica-Dataset">Replica</a> — high-quality synthetic/realistic indoor scenes.</li>
+<li><a href="https://cvg.cit.tum.de/data/datasets/rgbd-dataset">TUM RGB-D</a> — classic TUM (Technical University of Munich) RGB-D SLAM benchmark.</li>
+<li><a href="https://www.microsoft.com/en-us/research/project/rgb-d-dataset-7-scenes/">7-Scenes</a> — RGB-D relocalization benchmark.</li>
+<li><a href="https://github.com/facebookresearch/habitat-sim">Habitat</a> — simulator for embodied navigation; useful if converting scans to navigable environments.</li>
+</ul>
+</section>
+<section id="likely-best-architecture-for-house-scale-product" class="level2">
+<h2 class="anchored" data-anchor-id="likely-best-architecture-for-house-scale-product">Likely best architecture for house-scale product</h2>
+<p>Hybrid:</p>
+<ol type="1">
+<li>Capture RGB-D/video when possible, normal photos otherwise.</li>
+<li>Estimate camera poses with SLAM/SfM/VIO; use depth/LiDAR to stabilize scale and low-texture areas.</li>
+<li>Build coarse geometry: floor, walls, openings, maybe room mesh.</li>
+<li>Build room/portal/waypoint graph or navmesh.</li>
+<li>Train/render 3DGS chunks per room/area for photoreal visuals.</li>
+<li>Use panorama/waypoint anchors as robust UX fallback.</li>
+</ol>
+<p>Short version:</p>
+<blockquote class="blockquote">
+<p>3DGS for visuals + coarse mesh/depth/floorplan for navigation + pano/waypoint graph for reliable UX.</p>
+</blockquote>
+</section>
+<section id="product-tiers" class="level2">
+<h2 class="anchored" data-anchor-id="product-tiers">Product tiers</h2>
+<section id="tier-a-practical-baseline" class="level3">
+<h3 class="anchored" data-anchor-id="tier-a-practical-baseline">Tier A: practical baseline</h3>
+<p>Matterport-like node graph:</p>
+<ul>
+<li>360 panorama / photos every 1-2m.</li>
+<li>Auto or manual graph edges.</li>
+<li>Optional floorplan/dollhouse.</li>
+<li>Browser viewer.</li>
+</ul>
+<p>Best first product. Low technical risk.</p>
+</section>
+<section id="tier-b-photoreal-controlled-navigation" class="level3">
+<h3 class="anchored" data-anchor-id="tier-b-photoreal-controlled-navigation">Tier B: photoreal controlled navigation</h3>
+<ul>
+<li>Capture video/photos.</li>
+<li>Reconstruct poses.</li>
+<li>Train 3DGS per room/region.</li>
+<li>Navigate via waypoints; allow short interpolated motion.</li>
+<li>Keep graph constraints to avoid bad viewpoints.</li>
+</ul>
+<p>Good compromise: modern visual quality without full free-flight burden.</p>
+</section>
+<section id="tier-c-free-walk-indoor-digital-twin" class="level3">
+<h3 class="anchored" data-anchor-id="tier-c-free-walk-indoor-digital-twin">Tier C: free-walk indoor digital twin</h3>
+<ul>
+<li>RGB-D SLAM with loop closure.</li>
+<li>Pose graph optimization.</li>
+<li>Depth fusion/coarse mesh.</li>
+<li>3DGS visual layer with chunk streaming.</li>
+<li>Navmesh/collision.</li>
+<li>Room/door semantic graph.</li>
+</ul>
+<p>Closest to “Google Maps inside house”. Much harder.</p>
+</section>
+</section>
+<section id="capture-constraints" class="level2">
+<h2 class="anchored" data-anchor-id="capture-constraints">Capture constraints</h2>
+<p>Good capture matters more than model choice.</p>
+<p>Need:</p>
+<ul>
+<li>60-80% overlap.</li>
+<li>Slow continuous video or dense photo path.</li>
+<li>Loop closures: revisit prior areas.</li>
+<li>Doorways captured from both sides.</li>
+<li>Multiple viewpoints/heights for occlusions.</li>
+<li>Consistent lighting/exposure.</li>
+<li>No moving people/pets.</li>
+<li>Enough texture; add temporary visual markers if needed for research.</li>
+</ul>
+<p>Avoid or special-case:</p>
+<ul>
+<li>Mirrors.</li>
+<li>Glass.</li>
+<li>TV screens.</li>
+<li>Glossy counters/floors.</li>
+<li>Repetitive blank walls/corridors.</li>
+<li>Open/closed door state changes during capture.</li>
+</ul>
+</section>
+<section id="hard-problems" class="level2">
+<h2 class="anchored" data-anchor-id="hard-problems">Hard problems</h2>
+<ul>
+<li>Pose drift across rooms/floors.</li>
+<li>Textureless walls and ceilings.</li>
+<li>Repeated features in corridors.</li>
+<li>Reflective/transparent surfaces.</li>
+<li>Thin geometry: chair legs, railings, doorframes.</li>
+<li>Occlusions behind/under furniture.</li>
+<li>Lighting baked into reconstruction.</li>
+<li>Cross-room alignment through narrow portals.</li>
+<li>Deriving walkable space from visual representation.</li>
+<li>Web/mobile streaming of large 3DGS scenes.</li>
+</ul>
+</section>
+<section id="research-threads-keywords" class="level2">
+<h2 class="anchored" data-anchor-id="research-threads-keywords">Research threads / keywords</h2>
+<ul>
+<li>Structure-from-Motion (SfM), COLMAP.</li>
+<li>VIO (Visual-Inertial Odometry), ARKit/ARCore.</li>
+<li>RGB-D SLAM, LiDAR SLAM, loop closure.</li>
+<li>3DGS (3D Gaussian Splatting), large-scene 3DGS, chunked/streamed splats.</li>
+<li>Pose-free / pose-refinement 3DGS.</li>
+<li>Neural Radiance Fields (NeRF), instant-ngp, Zip-NeRF variants.</li>
+<li>Room segmentation, Manhattan-world indoor reconstruction.</li>
+<li>Floorplan extraction from RGB-D / point clouds.</li>
+<li>Navigation mesh generation from reconstructed geometry.</li>
+<li>Matterport-style panorama graph UX.</li>
+</ul>
+</section>
+<section id="early-recommendation" class="level2">
+<h2 class="anchored" data-anchor-id="early-recommendation">Early recommendation</h2>
+<p>Do not start with unconstrained free-flight 3D reconstruction.</p>
+<p>Start with a waypoint/panorama graph baseline, then add 3DGS as visual interpolation/immersion layer. In parallel, maintain a coarse metric geometry layer from depth/SLAM for floors/walls/doors/navigation.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/xl0\.github\.io\/exploring-edge-perf");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

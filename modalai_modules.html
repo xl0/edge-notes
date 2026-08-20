@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>ModalAI module reference – exploring-edge-perf</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-d63a2c9c8df14b07662b36303925c8cc.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="ModalAI module reference – exploring-edge-perf">
+<meta property="og:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta property="og:image" content="https://xl0.github.io/exploring-edge-perf/images/modalai/M0104-2d.png">
+<meta property="og:site_name" content="exploring-edge-perf">
+<meta property="og:image:alt" content="M0104 2D drawing">
+<meta property="og:image:height" content="1423">
+<meta property="og:image:width" content="2200">
+<meta name="twitter:title" content="ModalAI module reference – exploring-edge-perf">
+<meta name="twitter:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta name="twitter:image" content="https://xl0.github.io/exploring-edge-perf/images/modalai/M0104-2d.png">
+<meta name="twitter:creator" content="@xl0xl0xl0">
+<meta name="twitter:image:alt" content="M0104 2D drawing">
+<meta name="twitter:image-height" content="1423">
+<meta name="twitter:image-width" content="2200">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">exploring-edge-perf</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="http://github.com/xl0/edge-notes"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/xl0xl0xl0"> <i class="bi bi-twitter" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./modalai_modules.html">ModalAI module reference</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Research notebooks</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./edge_llm_tps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Theoretical LLM TPS on IQ-9075, Jetson, and NVIDIA GPUs</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./3d_photo_reconstruction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">3D photo reconstruction / indoor navigation research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autonomous_drone_navigation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Autonomous indoor drone navigation / capture research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04_ref_matrials.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">04_ref_matrials.html</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./nvidia_isaac_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NVIDIA Isaac ecosystem research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./voxl2_mini.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI VOXL 2 Mini research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./flight_compute_landscape.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Flight compute and competing ecosystems</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modalai_modules.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">ModalAI module reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pixhawk_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Pixhawk ecosystem</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ros.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ROS, from zero</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./vio_slam.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIO and SLAM</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./navigation_exploration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Navigation and exploration</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./platforms.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Drone platforms</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#compute-and-autopilot" id="toc-compute-and-autopilot" class="nav-link active" data-scroll-target="#compute-and-autopilot">Compute and autopilot</a></li>
+  <li><a href="#image-sensors" id="toc-image-sensors" class="nav-link" data-scroll-target="#image-sensors">Image sensors</a>
+  <ul class="collapse">
+  <li><a href="#tracking-vio-input" id="toc-tracking-vio-input" class="nav-link" data-scroll-target="#tracking-vio-input">Tracking (VIO input)</a></li>
+  <li><a href="#stereo" id="toc-stereo" class="nav-link" data-scroll-target="#stereo">Stereo</a></li>
+  <li><a href="#high-resolution-all-rolling-shutter" id="toc-high-resolution-all-rolling-shutter" class="nav-link" data-scroll-target="#high-resolution-all-rolling-shutter">High resolution — all rolling shutter</a></li>
+  </ul></li>
+  <li><a href="#depth-thermal-illumination" id="toc-depth-thermal-illumination" class="nav-link" data-scroll-target="#depth-thermal-illumination">Depth, thermal, illumination</a></li>
+  <li><a href="#interposers-flexes-adapters" id="toc-interposers-flexes-adapters" class="nav-link" data-scroll-target="#interposers-flexes-adapters">Interposers, flexes, adapters</a></li>
+  <li><a href="#esc-and-motor-io" id="toc-esc-and-motor-io" class="nav-link" data-scroll-target="#esc-and-motor-io">ESC and motor IO</a></li>
+  <li><a href="#modems-radios-expansion" id="toc-modems-radios-expansion" class="nav-link" data-scroll-target="#modems-radios-expansion">Modems, radios, expansion</a></li>
+  <li><a href="#debug-breakout-and-oddities" id="toc-debug-breakout-and-oddities" class="nav-link" data-scroll-target="#debug-breakout-and-oddities">Debug, breakout, and oddities</a></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content column-page-right" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">ModalAI module reference</h1>
+</div>
+
+
+
+<div class="quarto-title-meta column-page-right">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<p>Part-number lookup for the ModalAI catalogue, supporting <a href="./voxl2_mini.html">the VOXL 2 Mini notes</a>. Everything a build touches is an <code>M00xx</code> board, and the numbers are the only reliable identifier — the marketing names collide (three different boards are called simply “VOXL 2”).</p>
+<p>Compiled 2026-07-31 from the live <a href="https://docs.modalai.com/pcb-catalog/">PCB catalog</a> and the per-board datasheet pages: <strong>85 distinct part numbers</strong>, of which 73 are current and 54 have a dedicated page at <code>docs.modalai.com/&lt;part number&gt;/</code>.</p>
+<p>The <strong>What it is</strong> column adds integration context: direct VOXL 2/Mini fit, required carrier or flex, software role, and reasons not to choose a legacy part. Electrical compatibility alone is insufficient for MIPI cameras; a published driver, kernel variant, and camera configuration are also required.</p>
+<p>Four things worth knowing before using the catalog:</p>
+<ul>
+<li><strong>The catalog table is stale.</strong> 19 boards have live datasheet pages but do not appear in it at all — including <code>M0135</code>, <code>M0149</code>, <code>M0161</code>, <code>M0166</code>, <code>M0169</code>, <code>M0178</code>, <code>M0186</code>, <code>M0187</code>, <code>M0189</code> and <code>M0195</code>, which is most of the current sensor and adapter line. Search the docs by part number instead of trusting the table.</li>
+<li><strong>2D drawings are rare.</strong> The thumbnails in the <code>2D</code> column link to full-size copies kept in <code>images/modalai/</code>, converted from the ModalAI drawing PDFs or copied from the docs site. Where no drawing is published, three-view hidden-line projections (top / bottom / edge) rendered here from the part’s STEP file stand in — board outline, mounting holes, connectors and silkscreen are accurate, but there are no dimensions and assemblies may include a mating connector or lens. A blank cell means neither exists.</li>
+<li><strong>Prices are snapshots.</strong> Unqualified links are current ModalAI listings; <code>AMOV</code> marks a current exact-SKU AMOV RobotLab reseller listing, while <code>ModalAI archive</code> is the last manufacturer-store capture found and is not a current offer. All amounts are USD, checked 2026-08-06 (archives carry their capture month), before tax and shipping. A single amount is the cheapest exact-part configuration found; qualifiers distinguish board, carrier, kit, EOL, or sold-out stock. A range means configuration options change the price. <code>—</code> means no standalone exact-part public price was found after checking the manufacturer feed/store, distributor catalogs, docs buy links, web search, and the Internet Archive; successor and bundle prices are not substituted.</li>
+<li><strong>Weights are inconsistent.</strong> Some are bare PCB, some include cables or lids (<code>M0030</code> is listed as “8.24g / 14g with modem + lid”). Treat them as indicative.</li>
+</ul>
+<section id="compute-and-autopilot" class="level2">
+<h2 class="anchored" data-anchor-id="compute-and-autopilot">Compute and autopilot</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Part</th>
+<th>What it is</th>
+<th>Price</th>
+<th>Weight</th>
+<th>2D</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/voxl2-mini-datasheets/">M0104</a></td>
+<td><strong>VOXL 2 Mini</strong> — QRB5165 compute + PX4 DSP flight controller; 3.8 V, four camera slots, no PWM</td>
+<td><a href="https://web.archive.org/web/20240529214816/https://www.modalai.com/products/voxl-2-mini">$1,169.99</a><br>board; ModalAI archive 2024-05</td>
+<td>11.0 g</td>
+<td><a href="images/modalai/M0104-2d.png"><img src="images/modalai/M0104-2d.png" width="180" alt="M0104 2D drawing"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/voxl2-datasheets/">M0054</a></td>
+<td>VOXL 2 — QRB5165 compute + PX4 DSP flight controller; 5 V, six camera slots, legacy/high-speed B2B expansion</td>
+<td><a href="https://amovrobotlab.com/products/voxl-2">$2,040.00</a><br>board; AMOV</td>
+<td>16 g</td>
+<td><a href="images/modalai/M0054-2d.png"><img src="images/modalai/M0054-2d.png" width="180" alt="M0054-2d"></a> <a href="images/modalai/M0054-2d-2.png"><img src="images/modalai/M0054-2d-2.png" width="180" alt="M0054-2d-2"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/voxl2-datasheets/">M0154</a></td>
+<td>VOXL 2 later revision — software-compatible M0054 successor; J10 gains Mini-style UART/SPI selection</td>
+<td><a href="https://www.modalai.com/products/voxl-2">$1,299.99</a><br>board</td>
+<td>16 g</td>
+<td><a href="images/modalai/M0154-cad-top.png"><img src="images/modalai/M0154-cad-top.png" width="120" alt="M0154-cad-top"></a> <a href="images/modalai/M0154-cad-bottom.png"><img src="images/modalai/M0154-cad-bottom.png" width="120" alt="M0154-cad-bottom"></a> <a href="images/modalai/M0154-cad-edge.png"><img src="images/modalai/M0154-cad-edge.png" width="120" alt="M0154-cad-edge"></a></td>
+</tr>
+<tr class="even">
+<td>M0204</td>
+<td>VOXL 2 Mini refresh — M0104 successor; camera reset/global-sync routing changed, so carrier and kernel details matter</td>
+<td><a href="https://www.modalai.com/products/voxl-2-mini">$1,249.99</a><br>board</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/flight-core-v2-datasheets/">M0087</a></td>
+<td>Flight Core v2 — standalone STM32H7/PX4 controller with dual IMUs and eight PWM outputs; pair with separate companion compute</td>
+<td><a href="https://web.archive.org/web/20251205203951/https://www.modalai.com/products/flight-core-v2">$199.99</a><br>board; ModalAI archive 2025-12</td>
+<td>6 g</td>
+<td><a href="images/modalai/M0087-cad-top.png"><img src="images/modalai/M0087-cad-top.png" width="120" alt="M0087-cad-top"></a> <a href="images/modalai/M0087-cad-bottom.png"><img src="images/modalai/M0087-cad-bottom.png" width="120" alt="M0087-cad-bottom"></a> <a href="images/modalai/M0087-cad-edge.png"><img src="images/modalai/M0087-cad-edge.png" width="120" alt="M0087-cad-edge"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/flight-core-datasheet/">M0018</a></td>
+<td>Flight Core v1 — legacy standalone PX4 controller; relevant only to older split compute/flight-controller builds</td>
+<td><a href="https://amovrobotlab.com/products/flight-core">$391.00</a><br>board; AMOV</td>
+<td>6.13 g</td>
+<td><a href="images/modalai/M0018-cad-top.png"><img src="images/modalai/M0018-cad-top.png" width="120" alt="M0018-cad-top"></a> <a href="images/modalai/M0018-cad-bottom.png"><img src="images/modalai/M0018-cad-bottom.png" width="120" alt="M0018-cad-bottom"></a> <a href="images/modalai/M0018-cad-edge.png"><img src="images/modalai/M0018-cad-edge.png" width="120" alt="M0018-cad-edge"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/Qualcomm-Flight-RB5-datasheet/">M0052</a></td>
+<td>Qualcomm Flight RB5 carrier — larger QRB5165 reference flight platform; predecessor, not a Mini accessory</td>
+<td>—</td>
+<td>24.87 g</td>
+<td><a href="images/modalai/M0052-2d.png"><img src="images/modalai/M0052-2d.png" width="180" alt="M0052-2d"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/voxl-datasheets/">M0006</a></td>
+<td>VOXL 1 — APQ8096 companion computer from the older 5 V generation; superseded by QRB5165 boards</td>
+<td><a href="https://amovrobotlab.com/products/voxl">$850.00</a><br>board; AMOV</td>
+<td>16.51 g</td>
+<td><a href="images/modalai/M0006-cad-top.png"><img src="images/modalai/M0006-cad-top.png" width="120" alt="M0006-cad-top"></a> <a href="images/modalai/M0006-cad-bottom.png"><img src="images/modalai/M0006-cad-bottom.png" width="120" alt="M0006-cad-bottom"></a> <a href="images/modalai/M0006-cad-edge.png"><img src="images/modalai/M0006-cad-edge.png" width="120" alt="M0006-cad-edge"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/voxl-flight-datasheet/">M0019</a></td>
+<td>VOXL Flight — legacy VOXL 1-class compute plus Flight Core on one carrier; superseded by VOXL 2</td>
+<td><a href="https://amovrobotlab.com/products/voxl-flight">$1,020.00</a><br>board; AMOV</td>
+<td>24.5 g</td>
+<td><a href="images/modalai/M0019-cad-top.png"><img src="images/modalai/M0019-cad-top.png" width="120" alt="M0019-cad-top"></a> <a href="images/modalai/M0019-cad-bottom.png"><img src="images/modalai/M0019-cad-bottom.png" width="120" alt="M0019-cad-bottom"></a> <a href="images/modalai/M0019-cad-edge.png"><img src="images/modalai/M0019-cad-edge.png" width="120" alt="M0019-cad-edge"></a></td>
+</tr>
+<tr class="even">
+<td>M0068 / M0069</td>
+<td>Part-availability respins of M0006 / M0019; legacy generation, not new VOXL 2/Mini choices</td>
+<td>—</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="image-sensors" class="level2">
+<h2 class="anchored" data-anchor-id="image-sensors">Image sensors</h2>
+<section id="tracking-vio-input" class="level3">
+<h3 class="anchored" data-anchor-id="tracking-vio-input">Tracking (VIO input)</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Part</th>
+<th>Sensor</th>
+<th>Price</th>
+<th>Weight</th>
+<th>2D</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0014/">M0014</a></td>
+<td>OV7251 640x480 mono global-shutter fisheye — classic qVIO camera; legacy AXT connection needs a VOXL 2/Mini adapter</td>
+<td><a href="https://amovrobotlab.com/products/mkit-00010">$170.00</a><br>sensor + flex; AMOV</td>
+<td>0.51 g</td>
+<td><a href="images/modalai/M0014-2d.png"><img src="images/modalai/M0014-2d.png" width="180" alt="M0014-2d"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0072/">M0072</a></td>
+<td>OV7251 640x480 mono global-shutter fisheye — M0014/MD102A replacement; AXT adapter required on VOXL 2/Mini</td>
+<td><a href="https://amovrobotlab.com/products/m0072">$119.00</a><br>AMOV</td>
+<td>0.38 g</td>
+<td><a href="images/modalai/M0072-2d.jpg"><img src="images/modalai/M0072-2d.jpg" width="180" alt="M0072-2d"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0149/">M0149</a></td>
+<td>AR0144 1280x800 mono global-shutter 166° fisheye — current qVIO/tracking choice; AXT via M0076/M0084/M0135</td>
+<td><a href="https://www.modalai.com/products/msu-m0149-1">$119.99</a></td>
+<td></td>
+<td><a href="images/modalai/M0149-2d.png"><img src="images/modalai/M0149-2d.png" width="180" alt="M0149-2d"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0166/">M0166</a></td>
+<td>AR0144 1280x800 global-shutter coax camera — flexible placement and optional IR cut; needs a coax carrier such as M0172/M0195</td>
+<td><a href="https://www.modalai.com/products/msu-m0166">$139.99–149.99</a></td>
+<td></td>
+<td><a href="images/modalai/M0166-cad-top.png"><img src="images/modalai/M0166-cad-top.png" width="120" alt="M0166-cad-top"></a> <a href="images/modalai/M0166-cad-bottom.png"><img src="images/modalai/M0166-cad-bottom.png" width="120" alt="M0166-cad-bottom"></a> <a href="images/modalai/M0166-cad-edge.png"><img src="images/modalai/M0166-cad-edge.png" width="120" alt="M0166-cad-edge"></a></td>
+</tr>
+<tr class="odd">
+<td>M0091</td>
+<td>OV9281 tracking sensor — undocumented catalog item; no clear supported Mini integration path</td>
+<td>—</td>
+<td>2.13 g</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="stereo" class="level3">
+<h3 class="anchored" data-anchor-id="stereo">Stereo</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Part</th>
+<th>Sensor</th>
+<th>Price</th>
+<th>Weight</th>
+<th>2D</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0015/">M0015</a></td>
+<td>Dual OV7251 mono global-shutter module — fixed-baseline stereo/depth; AXT adapter chain required on VOXL 2/Mini</td>
+<td><a href="https://amovrobotlab.com/products/stereo-camera-pair-and-flex-cable-kit-mkit-00009">$170.00</a><br>sensor kit; AMOV</td>
+<td>0.41 g</td>
+<td><a href="images/modalai/M0015-2d.png"><img src="images/modalai/M0015-2d.png" width="180" alt="M0015-2d"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0073/">M0073</a></td>
+<td>OV9782 1280x800 RGB global shutter with IR-cut — stereo-flex compatible, but not recommended for new designs</td>
+<td>—</td>
+<td>0.53 g</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0113/">M0113</a></td>
+<td>OV9782 1280x800 RGB global shutter without IR-cut — infrared-sensitive sibling of M0073; not recommended for new designs</td>
+<td>—</td>
+<td></td>
+<td><a href="images/modalai/M0113-2d.jpg"><img src="images/modalai/M0113-2d.jpg" width="180" alt="M0113-2d"></a></td>
+</tr>
+<tr class="even">
+<td>M0088</td>
+<td>OV9782 variant — undocumented; avoid for a new build without ModalAI-confirmed driver and flex support</td>
+<td>—</td>
+<td>0.68 g</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="high-resolution-all-rolling-shutter" class="level3">
+<h3 class="anchored" data-anchor-id="high-resolution-all-rolling-shutter">High resolution — all rolling shutter</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Part</th>
+<th>Sensor</th>
+<th>Price</th>
+<th>Weight</th>
+<th>2D</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0025/">M0025</a></td>
+<td>IMX214 13 MP rolling-shutter compact module — 4K30 capture; legacy AXT, so VOXL 2/Mini needs an adapter</td>
+<td><a href="https://amovrobotlab.com/products/4k-high-resolution-sensor-for-voxl-8x8x5-8mm">$119.00</a><br>sensor; AMOV</td>
+<td>0.83 g</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0024/">M0024</a></td>
+<td>IMX214 13 MP rolling-shutter module in larger housing — 4K30 capture; legacy AXT adapter chain</td>
+<td><a href="https://amovrobotlab.com/products/voxl-4k-high-resolution-camera">$119.00</a><br>sensor; AMOV</td>
+<td>3.79 g</td>
+<td><a href="images/modalai/M0024-2d.png"><img src="images/modalai/M0024-2d.png" width="180" alt="M0024-2d"></a></td>
+</tr>
+<tr class="odd">
+<td>M0026</td>
+<td>IMX377 M12 wide-angle rolling-shutter module — legacy and undocumented; poor choice for a new Mini capture path</td>
+<td><a href="https://amovrobotlab.com/products/4k-high-resolution-sensor-for-voxl-imx377-m12">$153.00</a><br>sensor; AMOV</td>
+<td>8.57 g</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0107/">M0107</a></td>
+<td>IMX412 12.3 MP rolling-shutter RGB — 4K30, swappable M12 lens; AXT adapter required on VOXL 2/Mini</td>
+<td><a href="https://web.archive.org/web/20250807032621/https://www.modalai.com/products/msu-m0107">$179.99–229.99</a><br>ModalAI archive 2025-08</td>
+<td>7.5 g</td>
+<td><a href="images/modalai/M0107-cad-top.png"><img src="images/modalai/M0107-cad-top.png" width="120" alt="M0107-cad-top"></a> <a href="images/modalai/M0107-cad-bottom.png"><img src="images/modalai/M0107-cad-bottom.png" width="120" alt="M0107-cad-bottom"></a> <a href="images/modalai/M0107-cad-edge.png"><img src="images/modalai/M0107-cad-edge.png" width="120" alt="M0107-cad-edge"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0161/">M0161</a></td>
+<td>IMX412 12.3 MP rolling-shutter coax camera — up to 4K60; strong capture option but needs M0155/M0172/M0195-class carrier</td>
+<td><a href="https://www.modalai.com/products/msu-m0161">$209.99–259.99</a></td>
+<td></td>
+<td><a href="images/modalai/M0161-cad-top.png"><img src="images/modalai/M0161-cad-top.png" width="120" alt="M0161-cad-top"></a> <a href="images/modalai/M0161-cad-bottom.png"><img src="images/modalai/M0161-cad-bottom.png" width="120" alt="M0161-cad-bottom"></a> <a href="images/modalai/M0161-cad-edge.png"><img src="images/modalai/M0161-cad-edge.png" width="120" alt="M0161-cad-edge"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0186/">M0186</a></td>
+<td>IMX664 4.1 MP rolling-shutter coax camera — low-light, wide-FOV video up to 120 fps; needs a coax carrier</td>
+<td><a href="https://www.modalai.com/products/msu-m0186">$229.99–259.99</a></td>
+<td></td>
+<td><a href="images/modalai/M0186-cad-top.png"><img src="images/modalai/M0186-cad-top.png" width="120" alt="M0186-cad-top"></a> <a href="images/modalai/M0186-cad-bottom.png"><img src="images/modalai/M0186-cad-bottom.png" width="120" alt="M0186-cad-bottom"></a> <a href="images/modalai/M0186-cad-edge.png"><img src="images/modalai/M0186-cad-edge.png" width="120" alt="M0186-cad-edge"></a></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="depth-thermal-illumination" class="level2">
+<h2 class="anchored" data-anchor-id="depth-thermal-illumination">Depth, thermal, illumination</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Part</th>
+<th>What it is</th>
+<th>Price</th>
+<th>Weight</th>
+<th>2D</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0169/">M0169</a></td>
+<td>PMD IRS2975C indirect-ToF depth camera — 240x180, roughly 4-6 m; legacy AXT plus external 5 V makes Mini integration cumbersome</td>
+<td><a href="https://www.modalai.com/products/m0178?variant=48528287826224">$199.99</a><br>EOL; sold out</td>
+<td></td>
+<td><a href="images/modalai/M0169-cad-top.png"><img src="images/modalai/M0169-cad-top.png" width="120" alt="M0169-cad-top"></a> <a href="images/modalai/M0169-cad-bottom.png"><img src="images/modalai/M0169-cad-bottom.png" width="120" alt="M0169-cad-bottom"></a> <a href="images/modalai/M0169-cad-edge.png"><img src="images/modalai/M0169-cad-edge.png" width="120" alt="M0169-cad-edge"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0178/">M0178</a></td>
+<td>IRS2975C indirect-ToF module with integrated high-current 5 V feed — uses the newer 40-pin chain via M0172/M0173; Mini support docs conflict, so verify the exact camera config</td>
+<td><a href="https://www.modalai.com/products/m0178">$199.99</a></td>
+<td></td>
+<td><a href="images/modalai/M0178-cad-top.png"><img src="images/modalai/M0178-cad-top.png" width="120" alt="M0178-cad-top"></a> <a href="images/modalai/M0178-cad-bottom.png"><img src="images/modalai/M0178-cad-bottom.png" width="120" alt="M0178-cad-bottom"></a> <a href="images/modalai/M0178-cad-edge.png"><img src="images/modalai/M0178-cad-edge.png" width="120" alt="M0178-cad-edge"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0189/">M0189</a></td>
+<td><strong>Mini-specific VL53L8CX multizone rangefinder</strong> — 4x4/8x8 I2C depth, up to 4 m; connects through M0188/M0195 and <code>voxl-mini-tof-server</code>, not the MIPI camera pipeline</td>
+<td><a href="https://www.modalai.com/products/m0189">$44.99–54.99</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0040/">M0040</a></td>
+<td>PMD IRS1645 indirect-ToF camera — 224x171, roughly 4-6 m; EOL, replaced by the IRS2975C/M0178 path</td>
+<td><a href="https://amovrobotlab.com/products/voxl-dk-tof">$340.00</a><br>sensor kit; AMOV</td>
+<td>0.59 g</td>
+<td><a href="images/modalai/M0040-2d.png"><img src="images/modalai/M0040-2d.png" width="180" alt="M0040-2d"></a></td>
+</tr>
+<tr class="odd">
+<td>M0070</td>
+<td>VL53L1CX single-zone rangefinder board — useful for altitude/proximity, not a depth image; legacy undocumented item</td>
+<td>—</td>
+<td>0.13 g</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0187/">M0187</a></td>
+<td>FLIR Lepton SPI/I2C adapter — requires M0173/M0188/M0195 host carrier and SDK 1.4+; the Lepton core is separate</td>
+<td>—</td>
+<td></td>
+<td><a href="images/modalai/M0187-cad-top.png"><img src="images/modalai/M0187-cad-top.png" width="120" alt="M0187-cad-top"></a> <a href="images/modalai/M0187-cad-bottom.png"><img src="images/modalai/M0187-cad-bottom.png" width="120" alt="M0187-cad-bottom"></a> <a href="images/modalai/M0187-cad-edge.png"><img src="images/modalai/M0187-cad-edge.png" width="120" alt="M0187-cad-edge"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0153/">M0153</a></td>
+<td>FLIR Boson+ MIPI adapter — works on VOXL 2/Mini only through an additional coax carrier; SDK currently documents 30 fps and requires prior USB configuration</td>
+<td>—</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>M0089</td>
+<td>IR LED illuminator/driver — undocumented catalog item; no direct VOXL 2/Mini software role established</td>
+<td>—</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="interposers-flexes-adapters" class="level2">
+<h2 class="anchored" data-anchor-id="interposers-flexes-adapters">Interposers, flexes, adapters</h2>
+<p>The part of the catalogue that quietly decides the mechanical layout.</p>
+<p><strong>Connector families</strong>, since the part descriptions assume familiarity with them:</p>
+<ul>
+<li><strong>DF40</strong> — Hirose 60-pin, 0.4 mm pitch (<code>DF40C-60DP-0.4V(51)</code>). The camera ports on VOXL 2 and the Mini, J6 and J7. Each carries two camera “groups”.</li>
+<li><strong>AXT</strong> — Panasonic P4S board-to-board, 36-pin (<code>AXT336124</code> board side, <code>AXT436124</code> mating). The image-sensor connector on VOXL 1 and VOXL Flight, and still the format most sensor modules and flexes terminate in.</li>
+</ul>
+<p>“DF40C to AXT” adapters therefore exist to bridge generations: they break one group of signals (CSI lanes, timers, resets) out of a 60-pin DF40 port into a 36-pin AXT connector. <code>M0084</code> is the Y-variant that fans one port out to two sensors.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Part</th>
+<th>What it is</th>
+<th>Price</th>
+<th>Weight</th>
+<th>2D</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/m0076/">M0076</a></td>
+<td>DF40-to-AXT rigid adapter — exposes one lower camera slot for legacy AXT sensors; simplest one-camera bridge on VOXL 2/Mini</td>
+<td><a href="https://www.modalai.com/products/mdk-m0076-1">$19.99</a><br>EOL stock</td>
+<td>0.59 g</td>
+<td><a href="images/modalai/M0076-2d.png"><img src="images/modalai/M0076-2d.png" width="180" alt="M0076-2d"></a> <a href="images/modalai/M0076-2d-2.png"><img src="images/modalai/M0076-2d-2.png" width="180" alt="M0076-2d-2"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0084/">M0084</a></td>
+<td>DF40-to-dual-AXT 125 mm Y-flex — exposes both upper/lower camera slots from one J6/J7 group; useful for tracking/stereo layouts</td>
+<td><a href="https://www.modalai.com/products/msu-m0084">$69.99</a><br>EOL stock</td>
+<td>1.52 g</td>
+<td><a href="images/modalai/M0084-2d.png"><img src="images/modalai/M0084-2d.png" width="180" alt="M0084-2d"></a> <a href="images/modalai/M0084-2d-2.png"><img src="images/modalai/M0084-2d-2.png" width="180" alt="M0084-2d-2"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0135/">M0135</a></td>
+<td>Rigid dual-image-sensor adapter for VOXL 2/Mini — exposes both CSI slots from one DF40 camera group; alternative to the M0084 flex</td>
+<td><a href="https://www.modalai.com/products/mdk-m0135">$29.99</a></td>
+<td></td>
+<td><a href="images/modalai/M0135-cad-top.png"><img src="images/modalai/M0135-cad-top.png" width="120" alt="M0135-cad-top"></a> <a href="images/modalai/M0135-cad-bottom.png"><img src="images/modalai/M0135-cad-bottom.png" width="120" alt="M0135-cad-bottom"></a> <a href="images/modalai/M0135-cad-edge.png"><img src="images/modalai/M0135-cad-edge.png" width="120" alt="M0135-cad-edge"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0172/">M0172</a></td>
+<td>Mixed camera-group adapter for VOXL 2/Mini — lower slot drives the M0178 ToF chain, upper slot accepts coax tracking/hires cameras</td>
+<td><a href="https://www.modalai.com/products/mdk-m0172-1-00">$39.99</a></td>
+<td></td>
+<td><a href="images/modalai/M0172-cad-top.png"><img src="images/modalai/M0172-cad-top.png" width="120" alt="M0172-cad-top"></a> <a href="images/modalai/M0172-cad-bottom.png"><img src="images/modalai/M0172-cad-bottom.png" width="120" alt="M0172-cad-bottom"></a> <a href="images/modalai/M0172-cad-edge.png"><img src="images/modalai/M0172-cad-edge.png" width="120" alt="M0172-cad-edge"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0155/">M0155</a></td>
+<td>Single micro-coax camera adapter for VOXL 2/Mini J6/J7 — simple path for M0161/M0166/M0186, but exposes only one sensor</td>
+<td><a href="https://www.modalai.com/products/m0155">$29.99</a></td>
+<td></td>
+<td><a href="images/modalai/M0155-cad-top.png"><img src="images/modalai/M0155-cad-top.png" width="120" alt="M0155-cad-top"></a> <a href="images/modalai/M0155-cad-bottom.png"><img src="images/modalai/M0155-cad-bottom.png" width="120" alt="M0155-cad-bottom"></a> <a href="images/modalai/M0155-cad-edge.png"><img src="images/modalai/M0155-cad-edge.png" width="120" alt="M0155-cad-edge"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0195/">M0195</a></td>
+<td><strong>Mini-only dense imager front end</strong> — coax tracking/hires/Boson, dual Lepton and I2C ToF breakout; requires the D0013 kernel/config and is tied closely to M0204</td>
+<td><a href="https://www.modalai.com/products/m0188">$89.99</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0109/">M0109</a></td>
+<td>VOXL 2 camera-group J-flex — routes a DF40 group to two sensor connectors; documentation is pinout-only, so use only with a proven camera configuration</td>
+<td>—</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0010/">M0010</a></td>
+<td>AXT-to-dual-24-pin stereo flex with fixed 80 mm baseline — for M0015/M0073/M0113; add a DF40 adapter on VOXL 2/Mini</td>
+<td><a href="https://www.modalai.com/products/m0010">$49.99</a></td>
+<td>0.87 g</td>
+<td><a href="images/modalai/M0010-2d.png"><img src="images/modalai/M0010-2d.png" width="180" alt="M0010-2d"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0039/">M0039</a></td>
+<td>AXT-to-dual-24-pin stereo flex with fixed 218 mm baseline — wider depth geometry, but mechanically large for a Mini airframe</td>
+<td><a href="https://www.modalai.com/products/m0039">$89.99</a><br>flex only</td>
+<td></td>
+<td><a href="images/modalai/M0039-cad-top.png"><img src="images/modalai/M0039-cad-top.png" width="120" alt="M0039-cad-top"></a> <a href="images/modalai/M0039-cad-bottom.png"><img src="images/modalai/M0039-cad-bottom.png" width="120" alt="M0039-cad-bottom"></a> <a href="images/modalai/M0039-cad-edge.png"><img src="images/modalai/M0039-cad-edge.png" width="120" alt="M0039-cad-edge"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0036/">M0036</a></td>
+<td>145 mm AXT camera extension — legacy sensor placement option after a DF40 adapter; fixed flex length constrains the airframe</td>
+<td><a href="https://www.modalai.com/products/m0036">$49.99</a><br>EOL stock</td>
+<td>0.62 g</td>
+<td><a href="images/modalai/M0036-2d.png"><img src="images/modalai/M0036-2d.png" width="180" alt="M0036-2d"></a> <a href="images/modalai/M0036-2d-2.png"><img src="images/modalai/M0036-2d-2.png" width="180" alt="M0036-2d-2"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0074/">M0074</a></td>
+<td>60 mm AXT camera extension — shorter legacy placement option after a DF40 adapter</td>
+<td><a href="https://www.modalai.com/products/m0074">$49.99</a><br>EOL stock</td>
+<td>0.35 g</td>
+<td><a href="images/modalai/M0074-2d.png"><img src="images/modalai/M0074-2d.png" width="180" alt="M0074-2d"></a> <a href="images/modalai/M0074-2d-2.png"><img src="images/modalai/M0074-2d-2.png" width="180" alt="M0074-2d-2"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0008/">M0008</a></td>
+<td>Legacy 75 mm AXT-to-24-pin image-sensor interposer — VOXL 1-era bridge, not a direct VOXL 2/Mini connection</td>
+<td><a href="https://www.modalai.com/products/m0008">$49.99</a><br>EOL stock</td>
+<td>0.8 g</td>
+<td><a href="images/modalai/M0008-2d.png"><img src="images/modalai/M0008-2d.png" width="180" alt="M0008-2d"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/M0061/">M0061</a></td>
+<td>FRAMOS FSM camera carrier, sold with IMX412 or IMX678 rolling-shutter sensors — 4K capture through legacy AXT, so VOXL 2/Mini needs a DF40 adapter</td>
+<td><a href="https://amovrobotlab.com/products/4k-high-resolution-low-light-sensor-for-voxl-imx412-m12-style-lens">$595.00</a><br>camera kit; AMOV</td>
+<td>2.29 g</td>
+<td><a href="images/modalai/M0061-cad-top.png"><img src="images/modalai/M0061-cad-top.png" width="120" alt="M0061-cad-top"></a> <a href="images/modalai/M0061-cad-bottom.png"><img src="images/modalai/M0061-cad-bottom.png" width="120" alt="M0061-cad-bottom"></a> <a href="images/modalai/M0061-cad-edge.png"><img src="images/modalai/M0061-cad-edge.png" width="120" alt="M0061-cad-edge"></a></td>
+</tr>
+<tr class="even">
+<td>M0042</td>
+<td>FRAMOS IMX296 global-shutter carrier — legacy/undocumented integration; confirm driver and adapter support before using with VOXL 2/Mini</td>
+<td>—</td>
+<td>2.27 g</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>M0064</td>
+<td>Early DF40-to-AXT adapter — superseded by the power-corrected M0076; do not select for a new VOXL 2/Mini build</td>
+<td>—</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/M0173/">M0173</a></td>
+<td>Starling 2 camera front end — full VOXL 2 only; combines four coax cameras, PMD ToF and Lepton/rangefinder connections with synchronized tracking</td>
+<td><a href="https://www.modalai.com/products/m0173">$79.99</a><br>board</td>
+<td></td>
+<td><a href="images/modalai/M0173-cad-top.png"><img src="images/modalai/M0173-cad-top.png" width="120" alt="M0173-cad-top"></a> <a href="images/modalai/M0173-cad-bottom.png"><img src="images/modalai/M0173-cad-bottom.png" width="120" alt="M0173-cad-bottom"></a> <a href="images/modalai/M0173-cad-edge.png"><img src="images/modalai/M0173-cad-edge.png" width="120" alt="M0173-cad-edge"></a></td>
+</tr>
+</tbody>
+</table>
+<p>Stereo baselines and extension lengths come only in the sizes above. A custom camera placement means a custom flex, not a config change.</p>
+</section>
+<section id="esc-and-motor-io" class="level2">
+<h2 class="anchored" data-anchor-id="esc-and-motor-io">ESC and motor IO</h2>
+<p>The QRB5165 has no PWM output, so motor drive is a board-selection decision rather than a wiring detail.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Part</th>
+<th>What it is</th>
+<th>Price</th>
+<th>Weight</th>
+<th>2D</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/voxl-mini-esc-datasheet/">M0129</a></td>
+<td>Mini 4-in-1 UART ESC — current <code>M0129-63</code> accepts 2S-6S and supplies the Mini’s fixed 3.8 V rail; native J19 motor control plus battery/RPM telemetry</td>
+<td><a href="https://www.modalai.com/products/voxl-esc-mini">$229.99</a><br>Mini</td>
+<td></td>
+<td><a href="images/modalai/M0129-2d.png"><img src="images/modalai/M0129-2d.png" width="180" alt="M0129-2d"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/voxl-esc-datasheet/">M0049</a></td>
+<td>Earlier 4-in-1 UART/PWM ESC rev B — compatible with ModalAI’s PX4 ESC driver, but does not replace the Mini’s separate 3.8 V supply</td>
+<td><a href="https://web.archive.org/web/20210923173446/https://www.modalai.com/products/voxl-esc">$199.00</a><br>kit; ModalAI archive 2021-09</td>
+<td>10.28 g</td>
+<td><a href="images/modalai/M0049-cad-top.png"><img src="images/modalai/M0049-cad-top.png" width="120" alt="M0049-cad-top"></a> <a href="images/modalai/M0049-cad-bottom.png"><img src="images/modalai/M0049-cad-bottom.png" width="120" alt="M0049-cad-bottom"></a> <a href="images/modalai/M0049-cad-edge.png"><img src="images/modalai/M0049-cad-edge.png" width="120" alt="M0049-cad-edge"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/voxl-esc-datasheet/">M0117</a></td>
+<td>Alternate/respin of the M0049 4-in-1 UART ESC — seen in full VOXL 2 vehicle stacks; not the compact Mini power-and-ESC solution</td>
+<td><a href="https://amovrobotlab.com/products/voxl-esc">$340.00</a><br>kit; AMOV</td>
+<td>10.28 g</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/voxl-fpv-esc-datasheet/">M0138</a></td>
+<td>High-current FPV 4-in-1 ESC — UART only, roughly 40 A continuous / 100 A burst per motor; choose a 3.8 V-output variant if it must power a Mini</td>
+<td><a href="https://www.modalai.com/products/m0138">$299.99</a></td>
+<td></td>
+<td><a href="images/modalai/M0138-2d.png"><img src="images/modalai/M0138-2d.png" width="180" alt="M0138-2d"></a></td>
+</tr>
+<tr class="odd">
+<td>M0134</td>
+<td>4-in-1 UART/PWM ESC — 2S-6S option, about 10 A+ continuous per channel; its 500 mA auxiliary rail cannot power a Mini</td>
+<td><a href="https://web.archive.org/web/20240714204610/https://www.modalai.com/products/voxl-esc">$199.99–249.99</a><br>kit; ModalAI archive 2024-07</td>
+<td></td>
+<td><a href="images/modalai/M0134-2d.png"><img src="images/modalai/M0134-2d.png" width="180" alt="M0134-2d"></a></td>
+</tr>
+<tr class="even">
+<td>M0065</td>
+<td>VOXL 2 IO coprocessor — converts the board’s UART/PX4IO link to PWM; only four outputs at 400 Hz are currently supported and there is no DShot</td>
+<td><a href="https://www.modalai.com/products/voxl2-io">$99.99</a><br>board</td>
+<td>3.85 g</td>
+<td><a href="images/modalai/M0065-2d.png"><img src="images/modalai/M0065-2d.png" width="180" alt="M0065-2d"></a></td>
+</tr>
+<tr class="odd">
+<td>M0022</td>
+<td>Passive PWM header breakout for Flight Core/VOXL 2 IO — exposes existing PWM signals; it cannot create PWM from a VOXL 2/Mini by itself</td>
+<td><a href="https://www.modalai.com/products/flight-core-pwm-output-cable-and-break-out-board">$14.99</a></td>
+<td>4.17 g</td>
+<td><a href="images/modalai/M0022-cad-top.png"><img src="images/modalai/M0022-cad-top.png" width="120" alt="M0022-cad-top"></a> <a href="images/modalai/M0022-cad-bottom.png"><img src="images/modalai/M0022-cad-bottom.png" width="120" alt="M0022-cad-bottom"></a> <a href="images/modalai/M0022-cad-edge.png"><img src="images/modalai/M0022-cad-edge.png" width="120" alt="M0022-cad-edge"></a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="modems-radios-expansion" class="level2">
+<h2 class="anchored" data-anchor-id="modems-radios-expansion">Modems, radios, expansion</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Part</th>
+<th>What it is</th>
+<th>Price</th>
+<th>Weight</th>
+<th>2D</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/m0213/">M0213</a></td>
+<td>Sparrow dual-band 802.11ac 2x2 Wi-Fi add-on with 3.3 V legacy I/O and fastboot switch; Bluetooth is not yet supported. Docs claim Mini support, but the host is a 60-pin B2B, so verify the Mini carrier/revision</td>
+<td><a href="https://www.modalai.com/products/m0141">$239.99</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/m0183/">M0183</a></td>
+<td>Full VOXL 2 stacking board — mini-PCIe, one USB3, two USB2, microSD, SPI and apps UART/I2C; mates J3/J5 and therefore does not fit the Mini directly</td>
+<td>—</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/lte-modem-and-usb-add-on-v2-datasheet/">M0030</a></td>
+<td>Full VOXL/VOXL 2 B2B LTE Cat-4 carrier with Sierra modem and two USB2 host ports; no direct Mini stack connection</td>
+<td><a href="https://amovrobotlab.com/products/voxl-lte">$425.00–510.00</a><br>carrier / modem; AMOV</td>
+<td>8.24 g bare, 14 g loaded</td>
+<td><a href="images/modalai/M0030-cad-top.png"><img src="images/modalai/M0030-cad-top.png" width="120" alt="M0030-cad-top"></a> <a href="images/modalai/M0030-cad-bottom.png"><img src="images/modalai/M0030-cad-bottom.png" width="120" alt="M0030-cad-bottom"></a> <a href="images/modalai/M0030-cad-edge.png"><img src="images/modalai/M0030-cad-edge.png" width="120" alt="M0030-cad-edge"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/microhard-add-on-datasheet/">M0048</a></td>
+<td>Legacy/full-board Microhard pDDL carrier with LAN7500 Ethernet and USB hub; high power draw and B2B mechanics make it a poor Mini fit</td>
+<td><a href="https://www.modalai.com/products/voxl-microhard-modem-usb-hub">$199.99</a></td>
+<td>14.81 g</td>
+<td><a href="images/modalai/M0048-cad-top.png"><img src="images/modalai/M0048-cad-top.png" width="120" alt="M0048-cad-top"></a> <a href="images/modalai/M0048-cad-bottom.png"><img src="images/modalai/M0048-cad-bottom.png" width="120" alt="M0048-cad-bottom"></a> <a href="images/modalai/M0048-cad-edge.png"><img src="images/modalai/M0048-cad-edge.png" width="120" alt="M0048-cad-edge"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/microhard-add-on-datasheet/">M0059</a></td>
+<td>Later Microhard pMDDL900/1621/4 carrier for long-range IP datalink; full-board B2B accessory, not a direct Mini module</td>
+<td>—</td>
+<td></td>
+<td><a href="images/modalai/M0059-cad-top.png"><img src="images/modalai/M0059-cad-top.png" width="120" alt="M0059-cad-top"></a> <a href="images/modalai/M0059-cad-bottom.png"><img src="images/modalai/M0059-cad-bottom.png" width="120" alt="M0059-cad-bottom"></a> <a href="images/modalai/M0059-cad-edge.png"><img src="images/modalai/M0059-cad-edge.png" width="120" alt="M0059-cad-edge"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/5G-Modem-datasheet/">M0090</a></td>
+<td>Full VOXL 2 M.2 B-key 5G modem carrier with nano-SIM and USB3; stacks on J3/J5, so Mini use requires a separate USB/power integration</td>
+<td><a href="https://www.modalai.com/products/mdk-m0090">$269.99</a><br>carrier</td>
+<td>12.8 g</td>
+<td><a href="images/modalai/M0090-cad-top.png"><img src="images/modalai/M0090-cad-top.png" width="120" alt="M0090-cad-top"></a> <a href="images/modalai/M0090-cad-bottom.png"><img src="images/modalai/M0090-cad-bottom.png" width="120" alt="M0090-cad-bottom"></a> <a href="images/modalai/M0090-cad-edge.png"><img src="images/modalai/M0090-cad-edge.png" width="120" alt="M0090-cad-edge"></a></td>
+</tr>
+<tr class="odd">
+<td>M0067</td>
+<td>Earlier 5G carrier/debug revision — full VOXL 2/RB5 mechanical path; M0090 is the cleaner documented carrier</td>
+<td>—</td>
+<td>13.22 g</td>
+<td><a href="images/modalai/M0067-2d.png"><img src="images/modalai/M0067-2d.png" width="180" alt="M0067-2d"></a></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="debug-breakout-and-oddities" class="level2">
+<h2 class="anchored" data-anchor-id="debug-breakout-and-oddities">Debug, breakout, and oddities</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Part</th>
+<th>What it is</th>
+<th>Price</th>
+<th>Weight</th>
+<th>2D</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/m0062-user-guide/">M0062</a></td>
+<td>Full VOXL 2 Ethernet/USB/debug expansion — adds storage, SPI/UART/I2C and recovery access through both B2B connectors; no direct Mini fit</td>
+<td><a href="https://www.modalai.com/products/m0062-2">$259.99</a></td>
+<td>15.46 g</td>
+<td><a href="images/modalai/M0062-cad-top.png"><img src="images/modalai/M0062-cad-top.png" width="120" alt="M0062-cad-top"></a> <a href="images/modalai/M0062-cad-bottom.png"><img src="images/modalai/M0062-cad-bottom.png" width="120" alt="M0062-cad-bottom"></a> <a href="images/modalai/M0062-cad-edge.png"><img src="images/modalai/M0062-cad-edge.png" width="120" alt="M0062-cad-edge"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/usb-expander-and-debug-datasheet/">M0078</a></td>
+<td>USB2 host + optional serial/fastboot debug board for VOXL/VOXL 2; EOL in favor of M0151 and mechanically irrelevant to the Mini</td>
+<td><a href="https://amovrobotlab.com/products/voxl-debug-board-v2">$85.00</a><br>kit; AMOV</td>
+<td>3.14 g</td>
+<td><a href="images/modalai/M0078-2d.png"><img src="images/modalai/M0078-2d.png" width="180" alt="M0078-2d"></a></td>
+</tr>
+<tr class="odd">
+<td>M0017</td>
+<td>First-generation VOXL USB/debug/fastboot board — EOL legacy B2B accessory, not for VOXL 2 Mini</td>
+<td><a href="https://web.archive.org/web/20220629205131/https://www.modalai.com/collections/accessories/products/voxl-usb-expansion-board-with-debug-fastboot-and-emergency-boot">$49.00</a><br>kit; ModalAI archive 2022-06</td>
+<td>4.83 g</td>
+<td><a href="images/modalai/M0017-cad-top.png"><img src="images/modalai/M0017-cad-top.png" width="120" alt="M0017-cad-top"></a> <a href="images/modalai/M0017-cad-bottom.png"><img src="images/modalai/M0017-cad-bottom.png" width="120" alt="M0017-cad-bottom"></a> <a href="images/modalai/M0017-cad-edge.png"><img src="images/modalai/M0017-cad-edge.png" width="120" alt="M0017-cad-edge"></a></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/m0151/">M0125</a></td>
+<td>Full VOXL 2 B2B breakout exposing apps UART and USB3; the Mini already exposes comparable J10/J3 ports and cannot stack it directly</td>
+<td><a href="https://amovrobotlab.com/products/usb-3-uart-expansion-adapter">$85.00–102.00</a><br>board / cables; AMOV</td>
+<td></td>
+<td><a href="images/modalai/M0125-cad-top.png"><img src="images/modalai/M0125-cad-top.png" width="120" alt="M0125-cad-top"></a> <a href="images/modalai/M0125-cad-bottom.png"><img src="images/modalai/M0125-cad-bottom.png" width="120" alt="M0125-cad-bottom"></a> <a href="images/modalai/M0125-cad-edge.png"><img src="images/modalai/M0125-cad-edge.png" width="120" alt="M0125-cad-edge"></a></td>
+</tr>
+<tr class="odd">
+<td><a href="https://docs.modalai.com/m0197-fpv-hil/">M0197</a></td>
+<td><strong>FPV VOXL platform with first-class HITL support</strong> — real apps processor + DSP PX4 driven from Gazebo over USB Ethernet; reference for simulation bridging, not a Mini add-on</td>
+<td>—</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td><a href="https://docs.modalai.com/flight-deck-datasheet/">M0034</a></td>
+<td>Mechanical tray/carrier for the legacy VOXL Flight Deck stack; no electrical function and no Mini role</td>
+<td>—</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>M0046</td>
+<td>ICM-42688 IMU breakout — bring-up/test hardware, not required by VOXL 2/Mini because their flight stack already has onboard IMUs</td>
+<td>—</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>M0045</td>
+<td>Passive horizontal UART splitter — legacy harness convenience; verify voltage and ownership before attaching to a Mini UART</td>
+<td>—</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>M0086</td>
+<td>Chirp ultrasonic-sensor adapter for Qualcomm Flight RB5; platform-specific legacy accessory with no Mini path</td>
+<td>—</td>
+<td>3 g</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>M0094</td>
+<td>Spektrum RC bind/interface board used in RB5/VOXL 2 vehicle assemblies; unnecessary for ELRS/SBUS and not a direct Mini accessory</td>
+<td><a href="https://amovrobotlab.com/products/voxl-2-gps-mag-rc-assembly">$204.00–323.00</a><br>kit / receiver; AMOV</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>M0038 / M0085</td>
+<td>Generation-1 VOXL mezzanines for stereo/IMU/tracking and FLIR/RGB LED; legacy stack mechanics, superseded by VOXL 2/Mini camera carriers</td>
+<td>—</td>
+<td>5.65 / 5.91 g</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>End of life or not in production:</strong> M0007, M0009, M0011, M0012, M0013, M0016, M0027, M0047, M0092, M0093. The live catalog does contain the <strong>M0041</strong> power module family, but only its 5 V <code>M0041-1</code> and <code>M0041-5</code> configurations. It omits the Mini’s 3.8 V assembly, whose exact current store SKU is <a href="https://www.modalai.com/products/mdk-m0041-1?variant=44759397073200"><code>MDK-M0041-4-00</code> — $79.99</a>. The generic <a href="https://docs.modalai.com/power-module-v3-datasheet/">Power Module v3 datasheet</a> is also stale and lists only older 5 V part numbers.</p>
+<p>The docs site source is also in the local checkout at <code>voxl/documentation/</code> (<code>docs/60-expansion-boards/99-pcb-catalog.md</code>), and lags the live site — the discrepancy is where the 19 missing catalog entries show up.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/xl0\.github\.io\/exploring-edge-perf");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

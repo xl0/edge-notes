@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Navigation and exploration – exploring-edge-perf</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-d63a2c9c8df14b07662b36303925c8cc.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="Navigation and exploration – exploring-edge-perf">
+<meta property="og:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta property="og:site_name" content="exploring-edge-perf">
+<meta name="twitter:title" content="Navigation and exploration – exploring-edge-perf">
+<meta name="twitter:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta name="twitter:creator" content="@xl0xl0xl0">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">exploring-edge-perf</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="http://github.com/xl0/edge-notes"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/xl0xl0xl0"> <i class="bi bi-twitter" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./navigation_exploration.html">Navigation and exploration</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Research notebooks</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./edge_llm_tps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Theoretical LLM TPS on IQ-9075, Jetson, and NVIDIA GPUs</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./3d_photo_reconstruction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">3D photo reconstruction / indoor navigation research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autonomous_drone_navigation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Autonomous indoor drone navigation / capture research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04_ref_matrials.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">04_ref_matrials.html</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./nvidia_isaac_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NVIDIA Isaac ecosystem research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./voxl2_mini.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI VOXL 2 Mini research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./flight_compute_landscape.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Flight compute and competing ecosystems</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modalai_modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI module reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pixhawk_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Pixhawk ecosystem</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ros.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ROS, from zero</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./vio_slam.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIO and SLAM</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./navigation_exploration.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Navigation and exploration</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./platforms.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Drone platforms</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#the-stack" id="toc-the-stack" class="nav-link active" data-scroll-target="#the-stack">The stack</a></li>
+  <li><a href="#global-planning-routes-through-known-space" id="toc-global-planning-routes-through-known-space" class="nav-link" data-scroll-target="#global-planning-routes-through-known-space">Global planning: routes through known space</a></li>
+  <li><a href="#local-planning-and-trajectory-optimization" id="toc-local-planning-and-trajectory-optimization" class="nav-link" data-scroll-target="#local-planning-and-trajectory-optimization">Local planning and trajectory optimization</a></li>
+  <li><a href="#safety-the-layers-under-the-planner" id="toc-safety-the-layers-under-the-planner" class="nav-link" data-scroll-target="#safety-the-layers-under-the-planner">Safety: the layers under the planner</a></li>
+  <li><a href="#exploration-choosing-where-to-look-next" id="toc-exploration-choosing-where-to-look-next" class="nav-link" data-scroll-target="#exploration-choosing-where-to-look-next">Exploration: choosing where to look next</a></li>
+  <li><a href="#capture-planning-coverage-of-surfaces-not-space" id="toc-capture-planning-coverage-of-surfaces-not-space" class="nav-link" data-scroll-target="#capture-planning-coverage-of-surfaces-not-space">Capture planning: coverage of surfaces, not space</a></li>
+  <li><a href="#planning-under-uncertainty-and-active-slam" id="toc-planning-under-uncertainty-and-active-slam" class="nav-link" data-scroll-target="#planning-under-uncertainty-and-active-slam">Planning under uncertainty, and active SLAM</a></li>
+  <li><a href="#learned-navigation-what-is-real-in-2026" id="toc-learned-navigation-what-is-real-in-2026" class="nav-link" data-scroll-target="#learned-navigation-what-is-real-in-2026">Learned navigation: what is real in 2026</a></li>
+  <li><a href="#systems-worth-knowing-by-name" id="toc-systems-worth-knowing-by-name" class="nav-link" data-scroll-target="#systems-worth-knowing-by-name">Systems worth knowing by name</a></li>
+  <li><a href="#evaluating-navigation-and-exploration" id="toc-evaluating-navigation-and-exploration" class="nav-link" data-scroll-target="#evaluating-navigation-and-exploration">Evaluating navigation and exploration</a></li>
+  <li><a href="#fit-to-the-indoor-capture-project" id="toc-fit-to-the-indoor-capture-project" class="nav-link" data-scroll-target="#fit-to-the-indoor-capture-project">Fit to the indoor capture project</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content column-page-right" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Navigation and exploration</h1>
+</div>
+
+
+
+<div class="quarto-title-meta column-page-right">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<p>Notes on the decision layers of an autonomous drone: given a pose estimate and a map (the subject of <a href="./vio_slam.html">VIO and SLAM</a>), how the vehicle decides where to go and how to get there safely. Companion to the earlier <a href="./autonomous_drone_navigation.html">system-design notes</a>, which chose an architecture; this one surveys the field the way the VIO/SLAM notebook does.</p>
+<p>Core take: <strong>once a goal is chosen, flying to it is mature engineering; choosing the goal is the open problem.</strong> Finding a route through a mapped building, turning it into a smooth trajectory, and not hitting things on the way are solved problems with healthy open implementations. What remains genuinely open — and where an indoor-capture product differentiates — is deciding where the drone should go next. That decision comes in two distinct flavors: <strong>exploration</strong> (observe all the <em>space</em>) and <strong>capture planning</strong> (photograph all the <em>surfaces</em>, well). They look similar, optimize different quantities, and only the first has mature public solutions.</p>
+<p>A second theme runs through everything below: <strong>no single planner can be both globally smart and instantly reactive</strong>, so the work is split into layers. Each layer solves a coarser version of the problem over a longer horizon, less often; the layer below fills in the detail faster. Most of the design judgment in a navigation stack is deciding what each layer is allowed to ignore.</p>
+<section id="the-stack" class="level2">
+<h2 class="anchored" data-anchor-id="the-stack">The stack</h2>
+<p>Every deployed system decomposes the same way, whatever the vehicle:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Layer</th>
+<th>Question</th>
+<th>Rate</th>
+<th>Horizon</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Mission / goal selection</td>
+<td>what is worth visiting next?</td>
+<td>0.1–1 Hz</td>
+<td>mission</td>
+</tr>
+<tr class="even">
+<td>Global planner</td>
+<td>which route through known space?</td>
+<td>0.5–5 Hz</td>
+<td>whole map</td>
+</tr>
+<tr class="odd">
+<td>Local planner / trajectory optimizer</td>
+<td>which dynamically feasible curve for the next few seconds?</td>
+<td>5–30 Hz</td>
+<td>2–10 m</td>
+</tr>
+<tr class="even">
+<td>Tracking controller</td>
+<td>which attitude/thrust right now?</td>
+<td>100–500 Hz</td>
+<td>one step</td>
+</tr>
+<tr class="odd">
+<td>Flight controller</td>
+<td>which motor commands?</td>
+<td>1 kHz</td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
+<p>Two structural facts about this table:</p>
+<ul>
+<li><strong>Commands flow down, failures flow up.</strong> Each layer hands the one below a reference to follow — a route, a trajectory, an attitude — and receives back failure signals: blocked, infeasible, degraded. A stack is healthy when each failure is handled at the lowest layer able to absorb it: a newly seen obstacle should bend the local trajectory, not wake the mission planner.</li>
+<li><strong>The layers assume different world models.</strong> The global planner reads the full (drifting, occasionally corrected) map; the local planner trusts only the recent, high-confidence neighborhood; the controller assumes free space entirely. This is why map jump-on-loop-closure semantics (REP-105 <code>map</code> vs <code>odom</code> frames, covered in <a href="./vio_slam.html#integration-with-the-flight-stack">VIO and SLAM</a>) are a <em>planning-layer</em> concern: layers above the local planner may see jumps, layers below must never.</li>
+</ul>
+<p>For a quadrotor specifically, one property makes the whole stack tractable: <strong>differential flatness.</strong> A quadrotor’s full 12-dimensional state and its motor inputs can be recovered algebraically from just the position trajectory and yaw, plus their derivatives. Planners therefore never simulate the vehicle: they draw smooth curves in x, y, z, yaw, and checking that a curve is flyable reduces to bounding its derivatives (velocity, acceleration, jerk). A car offers no such shortcut — its no-sideways-motion constraint must be honored by the planner itself — which is why drone trajectory optimization is in some ways <em>simpler</em> than parking.</p>
+</section>
+<section id="global-planning-routes-through-known-space" class="level2">
+<h2 class="anchored" data-anchor-id="global-planning-routes-through-known-space">Global planning: routes through known space</h2>
+<p>Input: the map (occupancy or ESDF — Euclidean signed distance field, per-voxel distance to the nearest obstacle) and a goal. Output: a collision-free path, geometric only — no dynamics yet. Two families:</p>
+<p><strong>Search-based</strong> — discretize space, run graph search:</p>
+<ul>
+<li><strong>A*</strong> on a grid/octree: optimal, complete, the default indoors where maps are volumetric anyway. <strong>JPS</strong> (Jump Point Search) exploits grid symmetry to run an order of magnitude faster with identical results; standard in drone stacks.</li>
+<li><strong>D* Lite / incremental variants</strong> repair the previous solution when the map changes instead of replanning from scratch — historically important, less critical now that full A* on a house-sized map takes milliseconds.</li>
+</ul>
+<p><strong>Sampling-based</strong> — throw random configurations, connect feasible ones:</p>
+<ul>
+<li><strong>RRT</strong> (rapidly-exploring random tree) and descendants — <strong>RRT*</strong> (asymptotically optimal), Informed RRT*, <strong>BIT*</strong> (batch informed trees); <strong>PRM</strong> (probabilistic roadmap) when many queries hit one static map. <a href="https://ompl.kavrakilab.org/">OMPL</a> packages the whole family.</li>
+<li>Sampling planners earn their keep in high-dimensional configuration spaces (a 7-joint arm) or spaces too large to discretize. A drone searching 3D positions in a building-sized voxel map is neither: grid search is simpler, faster to reason about, and effectively optimal there. Sampling planners still show up in drone stacks (the <a href="./voxl2_mini.html#what-the-autonomy-stack-already-does">VOXL SDK</a>’s <code>voxl-mapper</code> plans with a vendored RRT*) — more by lineage than by necessity.</li>
+</ul>
+<p>One level of abstraction up sits <strong>topological planning</strong>: extract a sparse graph — rooms as nodes, doorways as edges — from the metric map, and route on that instead of on voxels. It is cheap at building scale, it is where semantic labels (“kitchen”, “hallway”) naturally attach, and a multi-room capture mission ends up needing exactly this graph anyway to order its work.</p>
+<p>Compute is a non-issue at this layer: milliseconds per solve on one core at house scale. In fact the whole planning stack is cheap — the only decision-side layer with real compute weight is goal selection above it, where estimating what a candidate view would reveal means ray-casting the map thousands of times.</p>
+</section>
+<section id="local-planning-and-trajectory-optimization" class="level2">
+<h2 class="anchored" data-anchor-id="local-planning-and-trajectory-optimization">Local planning and trajectory optimization</h2>
+<p>The geometric path is not flyable: it has corners and no notion of time. The local layer converts it into a smooth, dynamically feasible, collision-free trajectory over the next few seconds, replanned continuously. The lineage that leads to the current defaults:</p>
+<ul>
+<li><strong>Minimum-snap polynomials</strong> (Mellinger &amp; Kumar 2011) — the founding result: with differential flatness, encode the trajectory as piecewise polynomials and minimize snap (4th derivative of position, a proxy for control effort); the optimization is a small QP (quadratic program). Everything since is about adding obstacles and time allocation.</li>
+<li><strong>Safe flight corridors</strong> — carve a chain of overlapping convex regions (boxes or polyhedra) out of free space around the path, then constrain the trajectory inside them. Convex constraints keep the optimization fast and make safety auditable: trajectory inside corridor, corridor inside known-free space, done. <a href="https://arxiv.org/abs/1903.03558">FASTER</a> (MIT) is the reference for doing this with a hard safety guarantee — it always maintains a committed backup trajectory ending in a stop inside known-free space.</li>
+<li><strong>B-spline / gradient methods</strong> — represent the trajectory as a B-spline and push control points away from obstacles by descending the ESDF gradient. <a href="https://github.com/HKUST-Aerial-Robotics/Fast-Planner">Fast-Planner</a> (HKUST) is the classic kinodynamic-search-plus-B-spline pipeline; <a href="https://github.com/ZJU-FAST-Lab/ego-planner">EGO-Planner</a> (ZJU) made it ESDF-free — computing gradients only along the trajectory — cheap enough for a 20 g computer, and EGO-Swarm extended it to decentralized multi-drone.</li>
+<li><strong>MINCO / <a href="https://github.com/ZJU-FAST-Lab/GCOPTER">GCOPTER</a></strong> (ZJU) — the current state of the art in trajectory representation: minimum control effort polynomials with waypoints and segment times jointly optimized through a clever sparse parameterization, corridors handled by diffeomorphic mapping. Most 2023+ academic planners build on it.</li>
+<li><strong>MPC</strong> (model predictive control) — re-solve a short-horizon optimal control problem every cycle. The natural home for dynamic obstacles and aggressive tracking; heavier per-cycle, and the flat-output planners above cover most static-world needs without it.</li>
+</ul>
+<p>Two concerns cut across all of these methods. <strong>Time allocation</strong>: deciding how many seconds each trajectory segment gets. Allocate too generously and the flight is slow; too tightly and the segment demands infeasible accelerations. Naive planners fix durations by heuristic and suffer either way; MINCO optimizes durations jointly with geometry, which is much of why it wins. <strong>Perception awareness</strong>: the trajectory determines what the camera sees, and the estimator (<a href="./vio_slam.html">VIO</a>) needs to see somewhere useful. In practice this means scheduling yaw so the camera faces the direction of travel (new obstacles) or feature-rich structure (tracking quality), rather than letting yaw be an afterthought.</p>
+<p>Compute: the entire local layer is CPU-light by design — EGO-class planners report sub-millisecond replans, corridor QPs take single-digit milliseconds. Like <a href="./vio_slam.html#anatomy-of-a-vio-pipeline">VIO</a>, this layer is never why you buy a bigger computer; budget well under one core at 10–30 Hz replanning.</p>
+</section>
+<section id="safety-the-layers-under-the-planner" class="level2">
+<h2 class="anchored" data-anchor-id="safety-the-layers-under-the-planner">Safety: the layers under the planner</h2>
+<p>Obstacle avoidance is not one mechanism but a hierarchy of increasingly dumb, increasingly trustworthy fallbacks — designed so that each catches the failures of the smarter layer above:</p>
+<ol type="1">
+<li><strong>The planner itself</strong> — trajectories constrained to known-free space with an inflation margin (obstacle cells grown by vehicle radius plus stopping distance plus pose uncertainty — the derivation our collision-margin lesson works through). The subtle rule for unknown space: <em>unknown is not free.</em> A safe planner only commits to trajectories it can stop within space already observed to be free — FASTER’s committed-backup formalizes this.</li>
+<li><strong>Reactive avoidance</strong> — a fast loop consuming raw depth or a local ESDF, bending or braking the current trajectory when something appears where the map said nothing was. Dynamic obstacles (people, pets — guaranteed in an occupied house) live here: velocity-obstacle methods or simply generous margins plus braking, since houses leave no room for elegant evasion.</li>
+<li><strong>Autopilot-level guards</strong> — PX4/ArduPilot collision prevention: rangefinder or <a href="https://docs.px4.io/main/en/computer_vision/collision_prevention.html"><code>DISTANCE_SENSOR</code>-fed</a> speed limiting and hard stops near obstacles, working even when everything above is dead. ModalAI’s VOA (Voxl Obstacle Avoidance) in <code>voxl-vision-hub</code> is this tier.</li>
+<li><strong>Failsafes</strong> — offboard-link-loss, geofence, battery: land or hold. Not avoidance, but the reason a planner bug is an abort, not a crash.</li>
+</ol>
+<p>The architectural principle from the <a href="./autonomous_drone_navigation.html#system-boundary">system-design notes</a> bears repeating here because the literature quietly assumes it: layers 2–4 must run on the vehicle. A planner on a ground station may command; nothing off-board may be load-bearing for not hitting the wall.</p>
+</section>
+<section id="exploration-choosing-where-to-look-next" class="level2">
+<h2 class="anchored" data-anchor-id="exploration-choosing-where-to-look-next">Exploration: choosing where to look next</h2>
+<p>The first of the two goal-selection problems. Exploration is goal selection when the map is incomplete: repeatedly pick the motion that reveals the most unknown space, until nothing reachable remains unknown. Every method is built from the same three ingredients — <em>generate candidate goals</em>, <em>estimate the gain of each</em>, <em>order the visits</em> — and methods differ mainly in which ingredient they invest in:</p>
+<p><strong>Frontier-based</strong> (Yamauchi 1997, still the backbone): a frontier is a boundary cell between observed-free and unknown. Cluster frontiers, pick one (nearest, biggest, cheapest), go, repeat. Complete by construction — no frontiers left means nothing reachable remains unseen — and greedy by nature, which costs travel distance.</p>
+<p><strong>Sampling / next-best-view</strong>: sample candidate viewpoints, score each by expected <strong>information gain</strong> (unknown voxels visible from there, weighted by sensor model), pick the best. The receding-horizon variant (<a href="https://github.com/ethz-asl/nbvplanner">NBVP</a>, ETH 2016) grows an RRT of viewpoints, executes only the first edge of the best branch, and regrows — handling the fact that the map changes underfoot. Gain evaluation (ray-casting from every candidate) is the expensive step and the reason this layer, unlike planning, can eat a core.</p>
+<p><strong>Hierarchical hybrids — the current state of the art.</strong> Greedy frontier chasing wastes travel (it ping-pongs across the building as the “nearest” frontier flips); deep view-tree lookahead pays exponentially for foresight. Modern planners escape the dilemma by splitting the problem by scale — global visit order computed cheaply over the whole map, motion optimized expensively only nearby:</p>
+<ul>
+<li><a href="https://github.com/HKUST-Aerial-Robotics/FUEL">FUEL</a> (HKUST 2021) maintains incremental frontier information and solves a TSP (traveling salesman problem) over frontier clusters for global tour order, then optimizes an aggressive local trajectory toward the next one. The quantitative reference for fast single-drone exploration.</li>
+<li><a href="https://github.com/caochao39/tare_planner">TARE</a> (CMU 2021) — coarse global coverage tour over a sparse representation, fine trajectory only inside a local horizon. Ground-robot-born, the other standard baseline.</li>
+<li>The 2024–2026 crop refines the same recipe — better frontier structures, omnidirectional sensing, spatio-temporal candidate memory (<a href="https://arxiv.org/abs/2502.20707">FSMP</a>, <a href="https://arxiv.org/abs/2605.25423">OPAL</a>, STExplorer) — without changing the shape: frontiers + gain + tour.</li>
+</ul>
+<p><strong>Multi-robot</strong> extends the tour problem to task allocation (<a href="https://github.com/SYSU-STAR/RACER">RACER</a>, decentralized pairwise workload partition); relevant to us only as evidence the single-drone formulation is stable.</p>
+<p>Caveats that matter in practice: published comparisons run in favorable sim worlds, and house interiors — doorway bottlenecks, mirrors, furniture clutter — degrade all of these systems. And “exploration complete” means every voxel got classified, not that every surface got photographed well — the gap the next section is about.</p>
+</section>
+<section id="capture-planning-coverage-of-surfaces-not-space" class="level2">
+<h2 class="anchored" data-anchor-id="capture-planning-coverage-of-surfaces-not-space">Capture planning: coverage of surfaces, not space</h2>
+<p>Exploration’s objective — no unknown <em>voxels</em> — is the wrong objective for reconstruction. A room can be fully explored while half its surfaces were seen exactly once: obliquely, from across the room, motion-blurred. Reconstruction needs every <em>surface</em> observed <strong>well</strong> — close enough, head-on enough, from several angles, with overlap between shots — and no exploration planner optimizes for that. The planning problem that does appears in the literature under several names:</p>
+<ul>
+<li><strong>Coverage path planning (CPP)</strong> — geometry known in advance, compute a sweep (lawnmower passes, orbits). The mature, boring case: bridge inspection, agriculture. Indoors it applies only after a first pass has produced geometry — which is exactly what a two-pass architecture exploits.</li>
+<li><strong>NBV for reconstruction</strong> — the online version: score candidate views by expected <em>reconstruction</em> gain (poorly observed surface area, grazing-angle penalties, revisit needs) instead of unknown-voxel count. The surface- quality ledger from the <a href="./autonomous_drone_navigation.html#capture-ledger-what-already-took-pictures-here-means">system-design notes</a> — per-surface-patch view count, best angle, best distance, blur — is precisely the data structure this planner reads.</li>
+<li><strong>Active reconstruction in the radiance-field era</strong> (the lively 2024–2026 thread): when the online map <em>is</em> the photometric model — 3DGS (3D Gaussian Splatting) — view gain can be computed in the target representation itself, e.g.&nbsp;Fisher information over Gaussian parameters (<a href="https://openreview.net/forum?id=Lwf5WeiyA9">AG-SLAM</a>), Shannon mutual information (<a href="https://arxiv.org/abs/2504.21067">GauSS-MI</a>), or rendering- completeness heuristics (<a href="https://arxiv.org/abs/2410.21955">ActiveSplat</a>, ActiveGS, HGS-Planner). The promise over voxel-gain NBV: the planner optimizes what the final product actually is — rendered image quality — closing the loop that classical pipelines leave open between “covered” and “reconstructs well”. Compute today is desktop-GPU class, so on our architecture this planner lives PC-side, commanding the drone over the <a href="./pixhawk_ecosystem.html#talking-to-a-pixhawk-from-a-computer">offboard link</a>.</li>
+</ul>
+<p>The two objectives map directly onto mission structure: <strong>explore first</strong> (fast, gain = unknown space), <strong>then capture</strong> (deliberate, gain = surface quality), <strong>then verify</strong> (re-render or re-project the model and hunt for holes). GLEAM-class learned exploration policies (the <a href="05_gleam_week1_report.md">Week-1 GLEAM report</a>) solve only the first phase. The capture phase on house interiors has no off-the-shelf solution — the same gap the <a href="./flight_compute_landscape.html#the-autonomy-scorecard">landscape survey</a>’s autonomy scorecard found when approaching from the product side.</p>
+</section>
+<section id="planning-under-uncertainty-and-active-slam" class="level2">
+<h2 class="anchored" data-anchor-id="planning-under-uncertainty-and-active-slam">Planning under uncertainty, and active SLAM</h2>
+<p>Everything above quietly assumed the pose is right and the map is rigid. Over a whole-house mission neither holds (<a href="./vio_slam.html#the-estimation-problem">drift is structural</a>), and there are two disciplined responses:</p>
+<ul>
+<li><strong>Inflate for uncertainty.</strong> Fold pose covariance into the obstacle margin — fly wider when less sure. Cheap, local, and the reason the margin derivation treats uncertainty as a first-class term. The subtle failure it guards against: a doorway that is passable at 5 cm pose error and a wall strike at 20 cm.</li>
+<li><strong>Plan to stay localized — active SLAM.</strong> Treat estimator health as part of the objective: prefer trajectories through feature-rich, well-mapped space; schedule deliberate revisits of mapped regions so loop closures fire <em>before</em> drift corrupts the map, not after; penalize candidate views whose approach crosses texture deserts. Formally this is belief-space planning over pose uncertainty; practically, deployed systems use heuristics — revisit intervals, localization-quality costmaps, perception-aware yaw. The AG-SLAM-style objectives above (gain minus localization risk) are the same idea in the 3DGS setting.</li>
+</ul>
+<p>For a capture product the two pressures happen to align: capture <em>already</em> wants revisits (surfaces need views from multiple angles), and revisits are exactly what loop closure needs. Order the capture tour with the estimator in mind and drift correction comes nearly free. This is a real argument for one planner that owns both objectives, rather than an off-the-shelf exploration library with a capture pass bolted on top.</p>
+</section>
+<section id="learned-navigation-what-is-real-in-2026" class="level2">
+<h2 class="anchored" data-anchor-id="learned-navigation-what-is-real-in-2026">Learned navigation: what is real in 2026</h2>
+<p>The learned side, sorted by how deployed it actually is:</p>
+<p><strong>Learned modules inside classical stacks — real and shipping.</strong> Depth estimation, traversability prediction, semantic segmentation feeding costmaps, learned features keeping VIO alive on blank walls. Same pattern as in <a href="./vio_slam.html#the-taxonomy">estimation</a>: networks replace <em>perception modules</em>, solvers and safety layers stay classical.</p>
+<p><strong>End-to-end control policies — real in narrow regimes.</strong> The headline results are genuine: Swift beating human champions at drone racing (RL — reinforcement learning — trained in sim, Nature 2023) and Loquercio et al.’s zero-shot sim-to-real forest flight from depth images (Science Robotics 2021). Both exploit the same enablers — massive domain-randomized simulation and a low-dimensional input (depth, not RGB) — and both operate in regimes where a mistake costs a crashed research drone. No safety case exists yet for a learned policy as the <em>only</em> thing between a vehicle and a wall; fielded systems keep the classical safety hierarchy, with the learned policy proposing maneuvers and the classical layers keeping the authority to reject them.</p>
+<p><strong>Learned exploration policies — promising, so far sim-only.</strong> GLEAM (generalizable RL exploration over thousands of indoor scenes; <a href="05_gleam_week1_report.md">evaluated locally, Week 1</a>) and its kin learn the <em>goal-selection</em> layer: map in, next waypoint out. Goal selection is the sanest place in the stack to put a network — a bad output costs coverage efficiency, not a collision, because everything below it still enforces feasibility and safety. Whether map-conditioned policies transfer from sim to real buildings is the open question; today the evidence is entirely sim benchmarks (GLEAM-Bench’s coverage/AUC protocol).</p>
+<p><strong>Foundation-model navigation — the 2024–2026 research wave.</strong> Two threads: navigation foundation models trained across robot embodiments (ViNT, NoMaD — goal-image-conditioned, ground-robot-centric so far), and VLM/VLN (vision-language models / vision-and-language navigation) systems that put a language model in the goal-selection seat — scoring frontiers by semantic promise (“bedrooms are usually upstairs”), following instructions, or zero-shot commanding a drone (<a href="https://arxiv.org/abs/2509.22653">See, Point, Fly</a>; the <a href="https://arxiv.org/abs/2604.13654">UAV VLN roadmap survey</a>). For indoor capture the plausible near-term role is exactly this semantic prior — room recognition and mission structure — on top of a geometric stack that retains authority over feasibility and safety.</p>
+<p>The stable division of labor, then: <strong>learning moves up the stack, not down.</strong> Perception first, goal selection now, trajectory generation rarely, the safety layers never.</p>
+</section>
+<section id="systems-worth-knowing-by-name" class="level2">
+<h2 class="anchored" data-anchor-id="systems-worth-knowing-by-name">Systems worth knowing by name</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>System</th>
+<th>Layer</th>
+<th>License</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="https://docs.nav2.org/">Nav2</a></td>
+<td>full stack (ground)</td>
+<td>Apache-2.0</td>
+<td>The ROS 2 reference navigation architecture (behavior trees over global/local planners). Read it for the structure; its planners are ground-robot 2D, not flight code</td>
+</tr>
+<tr class="even">
+<td><a href="https://ompl.kavrakilab.org/">OMPL</a></td>
+<td>global planning</td>
+<td>BSD-3</td>
+<td>The sampling-planner library (RRT*/PRM/BIT* and dozens more)</td>
+</tr>
+<tr class="odd">
+<td><a href="https://github.com/HKUST-Aerial-Robotics/Fast-Planner">Fast-Planner</a></td>
+<td>local planning</td>
+<td>GPL-3.0</td>
+<td>Classic kinodynamic search + B-spline pipeline</td>
+</tr>
+<tr class="even">
+<td><a href="https://github.com/ZJU-FAST-Lab/ego-planner-swarm">EGO-Planner / EGO-Swarm</a></td>
+<td>local planning</td>
+<td>GPL-3.0</td>
+<td>ESDF-free gradient planner; the lightweight default; swarm variant decentralized</td>
+</tr>
+<tr class="odd">
+<td><a href="https://github.com/ZJU-FAST-Lab/GCOPTER">GCOPTER (MINCO)</a></td>
+<td>trajectory optimization</td>
+<td>MIT</td>
+<td>State-of-the-art trajectory representation; base of most 2023+ planners</td>
+</tr>
+<tr class="even">
+<td><a href="https://github.com/mit-acl/faster">FASTER</a></td>
+<td>local planning</td>
+<td>BSD-3</td>
+<td>Hard safety via committed backup trajectories in known-free space</td>
+</tr>
+<tr class="odd">
+<td><a href="https://github.com/ethz-asl/nbvplanner">NBVP</a></td>
+<td>exploration</td>
+<td>BSD-3</td>
+<td>The receding-horizon next-best-view original; a baseline now</td>
+</tr>
+<tr class="even">
+<td><a href="https://github.com/HKUST-Aerial-Robotics/FUEL">FUEL</a></td>
+<td>exploration</td>
+<td>GPL-3.0</td>
+<td>Incremental frontiers + TSP tour + aggressive local trajectories; the quantitative reference</td>
+</tr>
+<tr class="odd">
+<td><a href="https://github.com/caochao39/tare_planner">TARE</a></td>
+<td>exploration</td>
+<td>BSD-like (custom)</td>
+<td>Hierarchical coarse-global/fine-local coverage; CMU, ground-born</td>
+</tr>
+<tr class="even">
+<td><a href="https://github.com/SYSU-STAR/RACER">RACER</a></td>
+<td>multi-robot exploration</td>
+<td>GPL-3.0</td>
+<td>Decentralized workload partition over FUEL machinery</td>
+</tr>
+<tr class="odd">
+<td><a href="https://xiao-chen.tech/gleam/">GLEAM</a></td>
+<td>learned exploration</td>
+<td>CC BY-NC 4.0</td>
+<td>RL goal-selection policy generalizing across 1000+ indoor scenes; sim benchmark GLEAM-Bench</td>
+</tr>
+<tr class="even">
+<td><code>voxl-mapper</code> / <code>voxl-vision-hub</code></td>
+<td>mapping + local planning</td>
+<td>BSD-3 (ModalAI clause)</td>
+<td>voxblox + vendored RRT*/loco planners + VOA reactive tier on <a href="./voxl2_mini.html#what-the-autonomy-stack-already-does">VOXL</a>; no exploration layer</td>
+</tr>
+<tr class="odd">
+<td><a href="./nvidia_isaac_ecosystem.html#isaac-ros">Isaac ROS / nvblox + planners</a></td>
+<td>mapping + planning</td>
+<td>NVIDIA proprietary, free</td>
+<td>GPU mapping feeding Nav2-style planning; Jetson-native path</td>
+</tr>
+</tbody>
+</table>
+<p>Selection logic mirrors the estimation chapter: the planning and exploration layers are healthy open code (mind the GPL where it matters); the capture layer is not on this table because nothing shippable exists to put there.</p>
+</section>
+<section id="evaluating-navigation-and-exploration" class="level2">
+<h2 class="anchored" data-anchor-id="evaluating-navigation-and-exploration">Evaluating navigation and exploration</h2>
+<p>Metrics, by layer:</p>
+<ul>
+<li><strong>Trajectory quality</strong>: tracking error against the reference, jerk/snap (aggressiveness vs smoothness), time-to-goal, replan latency. Sim gives these against ground truth trivially — our B0.1 flight gate’s final-error and RMSE (root-mean-square error) numbers are this metric family in miniature.</li>
+<li><strong>Exploration</strong>: coverage ratio vs time (and its AUC — area under that curve, rewarding <em>fast</em> coverage, the headline GLEAM-Bench pair), path length per coverage, completion time, and completeness at termination.</li>
+<li><strong>Capture/reconstruction</strong>: surface completeness and accuracy (chamfer / point-to-plane distance against ground-truth geometry), fraction of surface meeting view-quality thresholds and — in the radiance-field thread — novel-view rendering quality (PSNR/SSIM — peak signal-to-noise ratio / structural similarity) of the final model. This last family is the one that actually corresponds to our product output.</li>
+<li><strong>Safety</strong>: collisions per mission, distribution of closest-approach margins, incursions into unknown space — reported almost nowhere in the literature, measurable for free in sim, and worth defining early and holding fixed as pass/fail gates.</li>
+</ul>
+<p>Benchmark reality check: exploration papers evaluate in hand-picked sim worlds (MARSIM, Gazebo scenes, GLEAM-Bench’s ProcTHOR/HSSD/Gibson/MP3D splits); no field-standard physical benchmark exists. This makes the sim-first, frozen-metric, negative-control posture of our Isaac lesson plan not just convenient but the same evidence standard the field itself runs on — with the usual caveat that sim clutter is cleaner than a lived-in house.</p>
+</section>
+<section id="fit-to-the-indoor-capture-project" class="level2">
+<h2 class="anchored" data-anchor-id="fit-to-the-indoor-capture-project">Fit to the indoor capture project</h2>
+<ul>
+<li><strong>Adopt, don’t write, everything below the goal.</strong> Global search, corridor or gradient local planning, and the safety hierarchy are commodity layers with multiple open implementations; on VOXL some of it (voxblox mapping, RRT* local planning, VOA) already ships. Writing our own trajectory optimizer would be recreational.</li>
+<li><strong>The product lives in the goal-selection layer, and it is two planners, not one.</strong> Exploration (space) has strong open baselines — FUEL/TARE-class classical, GLEAM-class learned — and should be <em>selected</em>, not invented. Capture (surface quality) has no off-the-shelf answer: the coverage-ledger NBV planner, its termination criterion (“this house is done”), and its interaction with estimator health are the parts a competitor cannot download.</li>
+<li><strong>The two-pass architecture keeps being right.</strong> Recon pass = exploration objective, onboard-safe, conservative; capture pass = coverage objective, PC-planned over the recon map, still onboard-guarded. The 3DGS-era active reconstruction results reinforce it: the heavy view-gain computation belongs off-board, and its output is <em>goals</em>, never trajectories.</li>
+<li><strong>Mission-level state is a first-class artifact.</strong> Frontier sets, the coverage ledger, tour order, revisit schedule — persistent, inspectable, resumable after battery swaps. The literature’s single-battery missions quietly skip this; a product cannot.</li>
+<li><strong>Near-term experimental path</strong>: B2’s occupancy/planning scaffold → frontier selection over it (B4’s photo-coverage metric as gain) → a small frozen exploration benchmark in Isaac/Pegasus scenes → swap in FUEL-style tour ordering and a GLEAM policy as comparisons on the same metric. That reproduces the field’s evaluation loop on our fixtures before any hardware flight.</li>
+</ul>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<p>Foundations:</p>
+<ul>
+<li><a href="https://faculty.iiit.ac.in/~mkrishna/YamauchiFrontier.pdf">Yamauchi 1997, frontier-based exploration</a></li>
+<li><a href="https://ieeexplore.ieee.org/document/5980409">Mellinger &amp; Kumar 2011, minimum-snap trajectories</a></li>
+<li><a href="https://github.com/ethz-asl/nbvplanner">Bircher et al.&nbsp;2016, receding-horizon NBV planning</a></li>
+<li>LaValle, <a href="http://lavalle.pl/planning/">Planning Algorithms</a> — the free textbook for the search/sampling half.</li>
+</ul>
+<p>Trajectory planning:</p>
+<ul>
+<li><a href="https://arxiv.org/abs/1903.03558">FASTER</a> — hard safety in unknown space.</li>
+<li><a href="https://arxiv.org/abs/2008.08835">EGO-Planner</a> and <a href="https://arxiv.org/abs/2103.00190">GCOPTER/MINCO</a> — the current defaults.</li>
+<li><a href="https://github.com/HKUST-Aerial-Robotics/Fast-Planner">Fast-Planner</a></li>
+</ul>
+<p>Exploration:</p>
+<ul>
+<li><a href="https://arxiv.org/abs/2010.11561">FUEL</a> and <a href="https://www.ri.cmu.edu/publications/tare-a-hierarchical-framework-for-efficiently-exploring-complex-3d-environments/">TARE</a> — the two standard baselines; <a href="https://arxiv.org/abs/2209.08533">RACER</a> for the multi-drone extension.</li>
+<li><a href="https://arxiv.org/abs/2502.20707">FSMP</a>, <a href="https://arxiv.org/abs/2605.25423">OPAL</a> — representative 2025–2026 refinements.</li>
+<li><a href="https://arxiv.org/abs/2508.09304">Decision-making-based path planning for UAVs: a survey</a></li>
+</ul>
+<p>Active reconstruction and learned goal selection:</p>
+<ul>
+<li><a href="https://openreview.net/forum?id=Lwf5WeiyA9">AG-SLAM</a>, <a href="https://arxiv.org/abs/2410.21955">ActiveSplat</a>, <a href="https://arxiv.org/abs/2504.21067">GauSS-MI</a> — 3DGS-era active capture.</li>
+<li><a href="https://xiao-chen.tech/gleam/">GLEAM</a> and the local <a href="05_gleam_week1_report.md">Week-1 evaluation</a>.</li>
+<li><a href="https://github.com/3D-Vision-World/awesome-NeRF-and-3DGS-SLAM">awesome-NeRF-and-3DGS-SLAM</a> — maintained index of the radiance-field SLAM/active-mapping literature.</li>
+</ul>
+<p>Learned flight:</p>
+<ul>
+<li><a href="https://www.nature.com/articles/s41586-023-06419-4">Kaufmann et al.&nbsp;2023, champion-level racing (Swift)</a></li>
+<li><a href="https://www.science.org/doi/10.1126/scirobotics.abg5810">Loquercio et al.&nbsp;2021, agile flight in the wild</a></li>
+<li><a href="https://arxiv.org/abs/2312.05019">Vision-based learning for drones: a survey</a>; <a href="https://arxiv.org/abs/2604.13654">UAV vision-and-language navigation roadmap</a>; <a href="https://arxiv.org/abs/2509.22653">See, Point, Fly</a></li>
+</ul>
+<p>Related notes: <a href="./vio_slam.html">VIO and SLAM</a> for the estimation layer below this one, <a href="./autonomous_drone_navigation.html">system-design notes</a> for the architecture decisions, <a href="./nvidia_isaac_ecosystem.html">the NVIDIA Isaac ecosystem</a> and <a href="./voxl2_mini.html">VOXL 2 Mini</a> for what candidate platforms ship, and <a href="./flight_compute_landscape.html">the flight compute landscape</a> for who else is attacking the same problem.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/xl0\.github\.io\/exploring-edge-perf");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Autonomous indoor drone navigation / capture research notes – exploring-edge-perf</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-d63a2c9c8df14b07662b36303925c8cc.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="Autonomous indoor drone navigation / capture research notes – exploring-edge-perf">
+<meta property="og:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta property="og:site_name" content="exploring-edge-perf">
+<meta name="twitter:title" content="Autonomous indoor drone navigation / capture research notes – exploring-edge-perf">
+<meta name="twitter:description" content="Memory-bandwidth-bound LLM decode TPS estimates and llama.cpp benchmarks">
+<meta name="twitter:creator" content="@xl0xl0xl0">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">exploring-edge-perf</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="http://github.com/xl0/edge-notes"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/xl0xl0xl0"> <i class="bi bi-twitter" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./autonomous_drone_navigation.html">Autonomous indoor drone navigation / capture research notes</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Research notebooks</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./edge_llm_tps.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Theoretical LLM TPS on IQ-9075, Jetson, and NVIDIA GPUs</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./3d_photo_reconstruction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">3D photo reconstruction / indoor navigation research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./autonomous_drone_navigation.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Autonomous indoor drone navigation / capture research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04_ref_matrials.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">04_ref_matrials.html</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./nvidia_isaac_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">NVIDIA Isaac ecosystem research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./voxl2_mini.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI VOXL 2 Mini research notes</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./flight_compute_landscape.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Flight compute and competing ecosystems</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./modalai_modules.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ModalAI module reference</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./pixhawk_ecosystem.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The Pixhawk ecosystem</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./ros.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ROS, from zero</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./vio_slam.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">VIO and SLAM</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./navigation_exploration.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Navigation and exploration</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./platforms.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Drone platforms</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#system-boundary" id="toc-system-boundary" class="nav-link active" data-scroll-target="#system-boundary">System boundary</a></li>
+  <li><a href="#nav-data-vs-hq-data" id="toc-nav-data-vs-hq-data" class="nav-link" data-scroll-target="#nav-data-vs-hq-data">Nav data vs HQ data</a>
+  <ul class="collapse">
+  <li><a href="#nav-data" id="toc-nav-data" class="nav-link" data-scroll-target="#nav-data">Nav data</a></li>
+  <li><a href="#hq-data" id="toc-hq-data" class="nav-link" data-scroll-target="#hq-data">HQ data</a></li>
+  </ul></li>
+  <li><a href="#capture-ledger-what-already-took-pictures-here-means" id="toc-capture-ledger-what-already-took-pictures-here-means" class="nav-link" data-scroll-target="#capture-ledger-what-already-took-pictures-here-means">Capture ledger: what “already took pictures here” means</a></li>
+  <li><a href="#planning-exploration-vs-reconstruction-capture" id="toc-planning-exploration-vs-reconstruction-capture" class="nav-link" data-scroll-target="#planning-exploration-vs-reconstruction-capture">Planning: exploration vs reconstruction capture</a></li>
+  <li><a href="#dronesensor-stack-options" id="toc-dronesensor-stack-options" class="nav-link" data-scroll-target="#dronesensor-stack-options">Drone/sensor stack options</a>
+  <ul class="collapse">
+  <li><a href="#minimal-practical-indoor-stack" id="toc-minimal-practical-indoor-stack" class="nav-link" data-scroll-target="#minimal-practical-indoor-stack">Minimal practical indoor stack</a></li>
+  <li><a href="#lidar-inertial-route" id="toc-lidar-inertial-route" class="nav-link" data-scroll-target="#lidar-inertial-route">LiDAR-inertial route</a></li>
+  <li><a href="#stereorgb-d-route" id="toc-stereorgb-d-route" class="nav-link" data-scroll-target="#stereorgb-d-route">Stereo/RGB-D route</a></li>
+  <li><a href="#tiny-drone-route" id="toc-tiny-drone-route" class="nav-link" data-scroll-target="#tiny-drone-route">Tiny drone route</a></li>
+  </ul></li>
+  <li><a href="#candidate-software-stacks" id="toc-candidate-software-stacks" class="nav-link" data-scroll-target="#candidate-software-stacks">Candidate software stacks</a>
+  <ul class="collapse">
+  <li><a href="#px4-ros-2-isaac-ros" id="toc-px4-ros-2-isaac-ros" class="nav-link" data-scroll-target="#px4-ros-2-isaac-ros">PX4 + ROS 2 + Isaac ROS</a></li>
+  <li><a href="#px4ardupilot-rtab-map" id="toc-px4ardupilot-rtab-map" class="nav-link" data-scroll-target="#px4ardupilot-rtab-map">PX4/ArduPilot + RTAB-Map</a></li>
+  <li><a href="#ardupilot-external-nav" id="toc-ardupilot-external-nav" class="nav-link" data-scroll-target="#ardupilot-external-nav">ArduPilot + external nav</a></li>
+  <li><a href="#aerostack2" id="toc-aerostack2" class="nav-link" data-scroll-target="#aerostack2">Aerostack2</a></li>
+  <li><a href="#research-planners" id="toc-research-planners" class="nav-link" data-scroll-target="#research-planners">Research planners</a></li>
+  </ul></li>
+  <li><a href="#pc-offload-architecture" id="toc-pc-offload-architecture" class="nav-link" data-scroll-target="#pc-offload-architecture">PC offload architecture</a>
+  <ul class="collapse">
+  <li><a href="#onboard-must-run" id="toc-onboard-must-run" class="nav-link" data-scroll-target="#onboard-must-run">Onboard must run</a></li>
+  <li><a href="#pc-can-run" id="toc-pc-can-run" class="nav-link" data-scroll-target="#pc-can-run">PC can run</a></li>
+  <li><a href="#link-protocol-split" id="toc-link-protocol-split" class="nav-link" data-scroll-target="#link-protocol-split">Link protocol split</a></li>
+  </ul></li>
+  <li><a href="#flightcapture-workflow" id="toc-flightcapture-workflow" class="nav-link" data-scroll-target="#flightcapture-workflow">Flight/capture workflow</a>
+  <ul class="collapse">
+  <li><a href="#recommended-two-pass-model" id="toc-recommended-two-pass-model" class="nav-link" data-scroll-target="#recommended-two-pass-model">Recommended two-pass model</a></li>
+  <li><a href="#capture-pose-rules" id="toc-capture-pose-rules" class="nav-link" data-scroll-target="#capture-pose-rules">Capture pose rules</a></li>
+  </ul></li>
+  <li><a href="#safety-constraints-specific-to-houses" id="toc-safety-constraints-specific-to-houses" class="nav-link" data-scroll-target="#safety-constraints-specific-to-houses">Safety constraints specific to houses</a></li>
+  <li><a href="#simulation-first" id="toc-simulation-first" class="nav-link" data-scroll-target="#simulation-first">Simulation first</a></li>
+  <li><a href="#staged-build-plan" id="toc-staged-build-plan" class="nav-link" data-scroll-target="#staged-build-plan">Staged build plan</a>
+  <ul class="collapse">
+  <li><a href="#stage-0-non-flying-data-prototype" id="toc-stage-0-non-flying-data-prototype" class="nav-link" data-scroll-target="#stage-0-non-flying-data-prototype">Stage 0 — non-flying data prototype</a></li>
+  <li><a href="#stage-1-sim-drone" id="toc-stage-1-sim-drone" class="nav-link" data-scroll-target="#stage-1-sim-drone">Stage 1 — sim drone</a></li>
+  <li><a href="#stage-2-safe-real-hoverwaypoints" id="toc-stage-2-safe-real-hoverwaypoints" class="nav-link" data-scroll-target="#stage-2-safe-real-hoverwaypoints">Stage 2 — safe real hover/waypoints</a></li>
+  <li><a href="#stage-3-autonomous-one-room-exploration" id="toc-stage-3-autonomous-one-room-exploration" class="nav-link" data-scroll-target="#stage-3-autonomous-one-room-exploration">Stage 3 — autonomous one-room exploration</a></li>
+  <li><a href="#stage-4-multi-room-map-capture" id="toc-stage-4-multi-room-map-capture" class="nav-link" data-scroll-target="#stage-4-multi-room-map-capture">Stage 4 — multi-room map + capture</a></li>
+  <li><a href="#stage-5-active-reconstruction" id="toc-stage-5-active-reconstruction" class="nav-link" data-scroll-target="#stage-5-active-reconstruction">Stage 5 — active reconstruction</a></li>
+  </ul></li>
+  <li><a href="#key-open-problems" id="toc-key-open-problems" class="nav-link" data-scroll-target="#key-open-problems">Key open problems</a></li>
+  <li><a href="#early-recommendation" id="toc-early-recommendation" class="nav-link" data-scroll-target="#early-recommendation">Early recommendation</a></li>
+  <li><a href="#end-to-end-deep-learning-learned-navigation" id="toc-end-to-end-deep-learning-learned-navigation" class="nav-link" data-scroll-target="#end-to-end-deep-learning-learned-navigation">End-to-end deep learning / learned navigation</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  <li><a href="#study-list-for-autonomous-navigation-beginners" id="toc-study-list-for-autonomous-navigation-beginners" class="nav-link" data-scroll-target="#study-list-for-autonomous-navigation-beginners">Study list for autonomous navigation beginners</a>
+  <ul class="collapse">
+  <li><a href="#watch-first" id="toc-watch-first" class="nav-link" data-scroll-target="#watch-first">Watch first</a></li>
+  <li><a href="#read-next" id="toc-read-next" class="nav-link" data-scroll-target="#read-next">Read next</a></li>
+  <li><a href="#hands-on-software-docs" id="toc-hands-on-software-docs" class="nav-link" data-scroll-target="#hands-on-software-docs">Hands-on software docs</a></li>
+  <li><a href="#drone-specific-examples" id="toc-drone-specific-examples" class="nav-link" data-scroll-target="#drone-specific-examples">Drone-specific examples</a></li>
+  <li><a href="#later-advanced" id="toc-later-advanced" class="nav-link" data-scroll-target="#later-advanced">Later / advanced</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content column-page-right" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Autonomous indoor drone navigation / capture research notes</h1>
+</div>
+
+
+
+<div class="quarto-title-meta column-page-right">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<p>Goal: design a house-scale drone system that can fly indoors, build a live 3D navigation map, remember where it has already captured imagery, decide where more imagery is needed, and save high-quality data for offline reconstruction.</p>
+<p>Core take: <strong>split live navigation from final reconstruction.</strong> Live nav needs conservative geometry and reliable pose at 10-100Hz. Final HQ reconstruction can use large images/video/depth offline, tolerate minutes-hours of compute, and reprocess after loop closure.</p>
+<section id="system-boundary" class="level2">
+<h2 class="anchored" data-anchor-id="system-boundary">System boundary</h2>
+<p>Do not make Wi-Fi + desktop PC responsible for low-level flight safety.</p>
+<p>Correct split:</p>
+<ul>
+<li><strong>Flight controller</strong>: IMU (inertial measurement unit)-rate stabilization, motor mixing, arming, failsafes. Use <a href="https://px4.io/">PX4</a> or <a href="https://ardupilot.org/">ArduPilot</a>.</li>
+<li><strong>Onboard companion computer</strong>: VIO (Visual-Inertial Odometry; camera + IMU pose tracking), LIO (LiDAR-Inertial Odometry; laser scanner + IMU pose tracking), RGB-D (red-green-blue plus depth) odometry, local obstacle map, local planner, collision gate, watchdogs, setpoint streaming to flight controller.</li>
+<li><strong>Ground PC</strong>: global map backend, loop closure, NBV (Next-Best-View; choose next camera pose that adds most useful information) / capture planning, operator UI, HQ data upload/storage, offline <a href="https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/">3DGS</a> (3D Gaussian Splatting; photoreal radiance representation) / photogrammetry.</li>
+</ul>
+<p>PC can choose goals. Drone must survive PC/link loss: hover, land, or backtrack using onboard state.</p>
+<p>Reason: <a href="https://docs.px4.io/main/en/flight_modes/offboard">PX4 Offboard Mode</a> requires continuous setpoint/heartbeat stream and exits/failsafes if it stops; docs call out <code>&gt;2Hz</code> proof-of-life and offboard-loss failsafe. <a href="https://ardupilot.org/dev/docs/mavlink-nongps-position-estimation.html">ArduPilot external navigation</a> accepts external odometry / guided commands, but position control depends on continuing valid estimator input. Household Wi-Fi has multipath, dead zones, and latency spikes.</p>
+</section>
+<section id="nav-data-vs-hq-data" class="level2">
+<h2 class="anchored" data-anchor-id="nav-data-vs-hq-data">Nav data vs HQ data</h2>
+<section id="nav-data" class="level3">
+<h3 class="anchored" data-anchor-id="nav-data">Nav data</h3>
+<p>Used during flight. Must be small, fast, conservative.</p>
+<p>Typical inputs:</p>
+<ul>
+<li>IMU at high rate.</li>
+<li>Stereo/depth frames or LiDAR (Light Detection and Ranging; active laser depth sensing) scans at 10-60Hz.</li>
+<li>Low-res RGB for VIO/features and semantic hints.</li>
+<li>Barometer/rangefinder/optical flow if useful.</li>
+</ul>
+<p>Typical outputs:</p>
+<ul>
+<li>Odometry: <code>T_world_body</code>, velocity, covariance/confidence.</li>
+<li>Local map: occupancy / TSDF / ESDF voxel grid.</li>
+<li>Collision state: free/occupied/unknown around drone.</li>
+<li>Frontier/candidate goals.</li>
+<li>Capture ledger updates: which poses/surfaces have usable evidence.</li>
+</ul>
+<p>Good nav map representations:</p>
+<ul>
+<li><strong>Occupancy grid</strong>: unknown/free/occupied voxels; good for exploration/frontiers.</li>
+<li><strong>TSDF</strong> (Truncated Signed Distance Field; voxel grid storing signed distance near surfaces): fused surface geometry; good reconstruction source. <a href="https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_nvblox">nvblox</a> and <a href="https://github.com/ethz-asl/voxblox">Voxblox</a> are common robotics references.</li>
+<li><strong>ESDF</strong> (Euclidean Signed Distance Field; voxel grid storing distance to nearest obstacle): good for collision checking/planning. <a href="https://nvidia-isaac-ros.github.io/v/release-4.4/concepts/scene_reconstruction/nvblox/technical_details.html">NVIDIA nvblox docs</a> explicitly use TSDF for reconstruction and ESDF for planning.</li>
+<li><strong>Pose graph</strong>: keyframes + constraints + loop closures; fixes drift. Often optimized with graph libraries like <a href="https://gtsam.org/">GTSAM</a>.</li>
+<li><strong>Topological graph</strong>: rooms/doors/waypoints/frontiers; cheap global planning.</li>
+</ul>
+</section>
+<section id="hq-data" class="level3">
+<h3 class="anchored" data-anchor-id="hq-data">HQ data</h3>
+<p>Used for final output. Can be large and delayed.</p>
+<p>Typical inputs:</p>
+<ul>
+<li>Full-res JPEG/RAW stills.</li>
+<li>4K/8K video if needed.</li>
+<li>360° panorama shots if hardware supports it.</li>
+<li>Raw depth/RGB-D bursts where useful.</li>
+<li>Exact camera intrinsics/extrinsics, exposure, focus, rolling-shutter metadata.</li>
+</ul>
+<p>HQ data policy:</p>
+<ul>
+<li>Store onboard first; upload opportunistically. Do not block flight on upload.</li>
+<li>Every frame must have timestamp, camera pose estimate, calibration version, stream id, quality metrics.</li>
+<li>Keep raw source even if live map later changes. Offline pipeline can rerun poses via SfM (Structure from Motion; estimate camera poses + sparse geometry from overlapping images), SLAM (Simultaneous Localization and Mapping; estimate pose while building map), or loop closure.</li>
+</ul>
+</section>
+</section>
+<section id="capture-ledger-what-already-took-pictures-here-means" class="level2">
+<h2 class="anchored" data-anchor-id="capture-ledger-what-already-took-pictures-here-means">Capture ledger: what “already took pictures here” means</h2>
+<p>Position-only visited markers are insufficient. Need surface/view coverage.</p>
+<p>Track at least:</p>
+<pre class="text"><code>Keyframe:
+  id, time, T_world_cam, camera_id, intrinsics_id
+  image_uri/depth_uri, nav_or_hq
+  blur, exposure, focus, feature_count, tracking_confidence
+
+Surface voxel / surfel / mesh facet:
+  state: unknown/free/occupied/surface
+  room_id, semantic_label optional
+  obs_count_depth, obs_count_rgb
+  best_ground_sample_distance_or_px_per_meter
+  best_incidence_angle
+  view_direction_histogram
+  image_ids_that_observe_it
+  confidence / needs_revisit
+
+Candidate view:
+  pose, yaw/pitch, camera mode
+  expected_new_unknown_voxels
+  expected_hq_surface_area_gain
+  expected_overlap_with_existing_images
+  path_cost, clearance_min, battery_cost
+  risk flags</code></pre>
+<p>Coverage tests:</p>
+<ul>
+<li><strong>Nav coverage</strong>: free space observed by rays, obstacle voxels seen, unknown frontiers reduced.</li>
+<li><strong>Reconstruction coverage</strong>: each surface seen by multiple sharp RGB images, enough overlap, enough parallax, sane viewing angle, enough pixel density.</li>
+<li><strong>Room coverage</strong>: every room/doorway/portal has topological connectivity and capture nodes.</li>
+</ul>
+<p>For photogrammetry/3DGS, “seen once” is weak. Prefer 2-4+ good views per surface, different baselines, with 60-80% overlap between neighboring images. Doorways need both sides. Outdoor mission planners like <a href="https://manuals-ugcs.sphengineering.com/docs/photogrammetry-area">UgCS Photogrammetry Area</a> show useful overlap/GSD (Ground Sample Distance; real-world distance per image pixel) concepts, though indoor flight geometry is different.</p>
+</section>
+<section id="planning-exploration-vs-reconstruction-capture" class="level2">
+<h2 class="anchored" data-anchor-id="planning-exploration-vs-reconstruction-capture">Planning: exploration vs reconstruction capture</h2>
+<p>Two separate objectives:</p>
+<ol type="1">
+<li><strong>Explore safely</strong>: find free space, avoid obstacles, discover rooms.</li>
+<li><strong>Capture well</strong>: choose views that improve final reconstruction.</li>
+</ol>
+<p>Classical pipeline:</p>
+<ol type="1">
+<li>Maintain occupancy/ESDF from depth/LiDAR.</li>
+<li>Find frontiers: boundary between known free space and unknown space.</li>
+<li>Sample candidate drone poses near frontiers / around under-covered surfaces.</li>
+<li>Reject unsafe poses: low clearance, unknown collision corridor, bad localization confidence.</li>
+<li>Score remaining poses:
+<ul>
+<li>information gain: unknown voxels visible;</li>
+<li>reconstruction gain: under-covered surface area visible;</li>
+<li>quality: distance, angle, expected blur, lighting;</li>
+<li>cost: path length/time/battery/risk.</li>
+</ul></li>
+<li>Execute short local trajectory.</li>
+<li>Stop/hover for HQ capture when needed.</li>
+</ol>
+<p>Good first version: frontier exploration + surface coverage heuristic. Do not start with learned NBV.</p>
+<p>Research / state-of-the-art threads:</p>
+<ul>
+<li><strong>RRT (Rapidly-exploring Random Tree) / next-best-trajectory</strong>: <a href="https://github.com/LTU-RAI/ExplorationRRT">ExplorationRRT</a> expands RRT branches and scores information gain along full candidate trajectories, not only endpoint frontiers.</li>
+<li><strong>NBV exploration planner</strong>: <a href="https://github.com/RaccoonlabDev/nbv_exploration_planner">NBV Exploration Planner</a> uses RRT-like tree search from current pose, gain over unmapped voxels, and history graph for revisiting old promising areas.</li>
+<li><strong>ActiveSplat</strong>: <a href="https://li-yuetao.github.io/ActiveSplat/">ActiveSplat</a> does active reconstruction with Gaussian map + sparse topological map; useful concept, not turnkey drone product.</li>
+<li><strong>GenNBV / NextBestPath</strong>: <a href="https://github.com/zjwzcx/GenNBV">GenNBV</a> and <a href="https://github.com/shiyao-li/NextBestPath">NextBestPath</a> are learned NBV/path policies for active 3D reconstruction. Good research direction after classical baseline exists.</li>
+</ul>
+</section>
+<section id="dronesensor-stack-options" class="level2">
+<h2 class="anchored" data-anchor-id="dronesensor-stack-options">Drone/sensor stack options</h2>
+<section id="minimal-practical-indoor-stack" class="level3">
+<h3 class="anchored" data-anchor-id="minimal-practical-indoor-stack">Minimal practical indoor stack</h3>
+<ul>
+<li>Small quad with prop guards / ducted frame.</li>
+<li>PX4 or ArduPilot flight controller.</li>
+<li>Onboard companion: <a href="https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-orin/">Jetson Orin Nano / Orin NX</a>, Intel <a href="https://www.intel.com/content/www/us/en/products/details/nuc.html">NUC</a>, or <a href="https://www.modalai.com/products/voxl-2">ModalAI VOXL 2</a>-class board.</li>
+<li>Stereo/depth + IMU camera, e.g.&nbsp;<a href="https://www.intelrealsense.com/depth-camera-d435i/">Intel RealSense D435i</a> / <a href="https://www.intelrealsense.com/depth-camera-d455/">D455</a> class or <a href="https://shop.luxonis.com/products/oak-d">Luxonis OAK-D</a>-class.</li>
+<li>Optional downward rangefinder / optical flow for altitude hold.</li>
+<li>Optional small LiDAR if payload/budget allow.</li>
+</ul>
+<p>RGB-only monocular is possible in papers, brittle in houses. Blank walls, motion blur, mirrors, glossy cabinets, repeated doors -&gt; tracking loss. Depth/stereo/LiDAR buys safety.</p>
+</section>
+<section id="lidar-inertial-route" class="level3">
+<h3 class="anchored" data-anchor-id="lidar-inertial-route">LiDAR-inertial route</h3>
+<p>LiDAR + IMU is robust for geometry and GPS-denied odometry. <a href="https://github.com/hku-mars/FAST_LIO/tree/ROS2">FAST-LIO</a> / FAST-LIO2 are common LIO baselines and have drone usage. Downsides: payload, cost, power, sparse texture/color; still need RGB/HQ capture for final visuals.</p>
+<p>Good when safety/navigation matters more than tiny drone size.</p>
+</section>
+<section id="stereorgb-d-route" class="level3">
+<h3 class="anchored" data-anchor-id="stereorgb-d-route">Stereo/RGB-D route</h3>
+<p>Stereo/depth camera gives nav geometry and RGB in one package. <a href="https://introlab.github.io/rtabmap/">RTAB-Map</a> (Real-Time Appearance-Based Mapping; RGB-D/stereo/LiDAR SLAM with loop closure), <a href="https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_visual_slam">Isaac ROS Visual SLAM</a>, nvblox, and <a href="https://github.com/UZ-SLAMLab/ORB_SLAM3">ORB-SLAM3</a> variants can fit.</p>
+<p>Good first product route if payload allows.</p>
+</section>
+<section id="tiny-drone-route" class="level3">
+<h3 class="anchored" data-anchor-id="tiny-drone-route">Tiny drone route</h3>
+<p><a href="https://www.bitcraze.io/products/crazyflie-2-1/">Crazyflie</a> / <a href="https://imrclab.github.io/crazyswarm2/">Crazyswarm2</a> is safer indoors and has ROS 2 (Robot Operating System 2; robotics middleware) / Gazebo workflows, but payload and image quality are poor. Useful for autonomy algorithms, not final photo capture.</p>
+</section>
+</section>
+<section id="candidate-software-stacks" class="level2">
+<h2 class="anchored" data-anchor-id="candidate-software-stacks">Candidate software stacks</h2>
+<section id="px4-ros-2-isaac-ros" class="level3">
+<h3 class="anchored" data-anchor-id="px4-ros-2-isaac-ros">PX4 + ROS 2 + Isaac ROS</h3>
+<p>Likely best NVIDIA path:</p>
+<ul>
+<li>PX4 flight controller.</li>
+<li><a href="https://github.com/PX4/px4_ros_com"><code>px4_ros_com</code></a> / <a href="https://mavsdk.mavlink.io/">MAVSDK</a> / <a href="https://github.com/mavlink/mavros">MAVROS</a> bridge. MAVLink (Micro Air Vehicle Link; common autopilot message protocol) carries telemetry, external odometry, and setpoints.</li>
+<li><a href="https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_visual_slam">Isaac ROS Visual SLAM</a>: GPU-accelerated stereo VIO/SLAM, can be primary odometry for drones.</li>
+<li><a href="https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_nvblox">Isaac ROS nvblox</a>: TSDF/ESDF local map from depth, collision planning substrate.</li>
+<li>Custom frontier/NBV planner on onboard or PC.</li>
+<li><a href="https://docs.ros.org/en/rolling/Tutorials/Advanced/Recording-A-Bag-From-Your-Own-Node-CPP.html">ROS 2 bag</a> recording for nav/HQ metadata.</li>
+</ul>
+<p>Good if using Jetson and stereo/depth camera.</p>
+</section>
+<section id="px4ardupilot-rtab-map" class="level3">
+<h3 class="anchored" data-anchor-id="px4ardupilot-rtab-map">PX4/ArduPilot + RTAB-Map</h3>
+<p>Practical RGB-D baseline:</p>
+<ul>
+<li>RGB-D odometry + loop closure with <a href="https://github.com/introlab/rtabmap_ros/">RTAB-Map ROS</a>.</li>
+<li>Occupancy/point cloud/2D grids for navigation.</li>
+<li>Bridge odometry to flight controller external-vision input.</li>
+<li>Works in sim and real with ROS 2, but tuning and frame conversions matter.</li>
+</ul>
+</section>
+<section id="ardupilot-external-nav" class="level3">
+<h3 class="anchored" data-anchor-id="ardupilot-external-nav">ArduPilot + external nav</h3>
+<p>ArduPilot accepts MAVLink <code>ODOMETRY</code> / <code>VISION_POSITION_ESTIMATE</code> at &gt;=4Hz for non-GPS EKF (Extended Kalman Filter; sensor-fusion estimator) position estimation. <a href="https://ardupilot.org/dev/docs/copter-commands-in-guided-mode.html">Guided Mode</a> supports local NED (North-East-Down coordinate frame) position/velocity/attitude commands. Good if ArduPilot ecosystem preferred.</p>
+</section>
+<section id="aerostack2" class="level3">
+<h3 class="anchored" data-anchor-id="aerostack2">Aerostack2</h3>
+<p><a href="https://aerostack2.github.io/">Aerostack2</a> is a ROS 2 aerial robotics framework integrating control, localization/mapping, planning, missions, simulation/real drones. Useful glue if wanting less custom orchestration.</p>
+</section>
+<section id="research-planners" class="level3">
+<h3 class="anchored" data-anchor-id="research-planners">Research planners</h3>
+<ul>
+<li><a href="https://github.com/LTU-RAI/ExplorationRRT">ExplorationRRT</a>: 3D UAV exploration, RRT branch info gain + NMPC (Nonlinear Model Predictive Control; optimize feasible dynamic trajectories), occupancy map input.</li>
+<li><a href="https://github.com/RaccoonlabDev/nbv_exploration_planner">NBV Exploration Planner</a>: real-time MAV (Micro Aerial Vehicle; small drone) next-best-view planner using Voxblox TSDF/ESDF style maps.</li>
+<li><a href="https://li-yuetao.github.io/ActiveSplat/">ActiveSplat</a> / <a href="https://github.com/zjwzcx/GenNBV">GenNBV</a> / <a href="https://github.com/shiyao-li/NextBestPath">NextBestPath</a>: active reconstruction research, likely inspiration not first dependency.</li>
+</ul>
+</section>
+</section>
+<section id="pc-offload-architecture" class="level2">
+<h2 class="anchored" data-anchor-id="pc-offload-architecture">PC offload architecture</h2>
+<section id="onboard-must-run" class="level3">
+<h3 class="anchored" data-anchor-id="onboard-must-run">Onboard must run</h3>
+<ul>
+<li>Flight controller stabilization and failsafes.</li>
+<li>Odometry source fused into controller: VIO/LIO/optical flow/range.</li>
+<li>Local collision map within ~3-5m.</li>
+<li>Emergency local planner/collision shield.</li>
+<li>Setpoint stream / heartbeat to flight controller.</li>
+<li>Health monitors: tracking confidence, map age, IMU vibration, battery, link quality.</li>
+<li>Local data recorder.</li>
+</ul>
+</section>
+<section id="pc-can-run" class="level3">
+<h3 class="anchored" data-anchor-id="pc-can-run">PC can run</h3>
+<ul>
+<li>Global map optimization and loop closure.</li>
+<li>Large TSDF/point cloud/mesh accumulation.</li>
+<li>NBV scoring over whole house.</li>
+<li>Operator UI + approve/deny capture goals.</li>
+<li>HQ image upload, indexing, previews.</li>
+<li>Offline <a href="https://colmap.github.io/">COLMAP</a> / 3DGS / MVS (Multi-View Stereo; dense geometry from multiple posed images) training.</li>
+</ul>
+</section>
+<section id="link-protocol-split" class="level3">
+<h3 class="anchored" data-anchor-id="link-protocol-split">Link protocol split</h3>
+<ul>
+<li><strong>Control/telemetry</strong>: tiny, reliable, low latency. MAVLink/UDP, ROS 2/DDS (Data Distribution Service; ROS 2 middleware layer) over LAN, or custom UDP. Must have heartbeat and sequence numbers.</li>
+<li><strong>Nav streaming</strong>: pose, compressed depth/point cloud/keyframes. Prefer derived/map data over raw full-res if bandwidth tight.</li>
+<li><strong>HQ media</strong>: large. Store onboard; upload after flight/while idle.</li>
+</ul>
+<p>Do not stream raw HQ video to PC and require PC to compute collision avoidance unless link is engineered like a safety-critical tether. Home Wi-Fi is not enough. PX4’s <a href="https://docs.px4.io/main/en/companion_computer/video_streaming_wfb_ng_wifi">WFB-ng guide</a> is a useful low-latency video/telemetry link reference, but it still should not be sole safety layer.</p>
+</section>
+</section>
+<section id="flightcapture-workflow" class="level2">
+<h2 class="anchored" data-anchor-id="flightcapture-workflow">Flight/capture workflow</h2>
+<section id="recommended-two-pass-model" class="level3">
+<h3 class="anchored" data-anchor-id="recommended-two-pass-model">Recommended two-pass model</h3>
+<ol type="1">
+<li><strong>Recon pass</strong>
+<ul>
+<li>Slow autonomous/assisted exploration.</li>
+<li>Build conservative map + room/door graph.</li>
+<li>Record nav frames and opportunistic HQ frames.</li>
+<li>Stop before risky tight spaces.</li>
+</ul></li>
+<li><strong>Capture pass</strong>
+<ul>
+<li>Use map to plan stable capture poses.</li>
+<li>Fly waypoint graph, stop-and-shoot HQ images/panos.</li>
+<li>Revisit under-covered surfaces.</li>
+<li>Operator can approve risky viewpoints.</li>
+</ul></li>
+</ol>
+<p>Single-pass autonomous capture is possible later, but harder: exploration and photogrammetry needs fight each other. Exploration likes speed/coverage; HQ capture likes stable hover, good lighting/focus, repeated views.</p>
+</section>
+<section id="capture-pose-rules" class="level3">
+<h3 class="anchored" data-anchor-id="capture-pose-rules">Capture pose rules</h3>
+<ul>
+<li>Fly slow: ~0.2-0.5m/s indoors during mapping.</li>
+<li>Stop for HQ stills; avoid motion blur/rolling shutter.</li>
+<li>Maintain clearance margin larger than drone radius + localization error + airflow disturbance.</li>
+<li>Capture at multiple heights for occlusions if safe.</li>
+<li>Doorways from both sides.</li>
+<li>Loop closures: revisit previous hallway/room nodes.</li>
+<li>Avoid mirrors/glass/TVs where possible; mark as special surfaces.</li>
+<li>Keep lighting constant; no people/pets moving.</li>
+</ul>
+</section>
+</section>
+<section id="safety-constraints-specific-to-houses" class="level2">
+<h2 class="anchored" data-anchor-id="safety-constraints-specific-to-houses">Safety constraints specific to houses</h2>
+<ul>
+<li>Prop guards mandatory. Ducted micro quad preferred for first indoor tests.</li>
+<li>Physical kill switch / RC (radio control; handheld manual transmitter) override mandatory.</li>
+<li>Max speed/accel/yaw rate caps.</li>
+<li>Geofence / room boundary / max altitude.</li>
+<li>No flight near people, pets, curtains, plants, loose cables.</li>
+<li>Treat unknown space as occupied for collision, except explicitly chosen exploration frontiers with conservative speed.</li>
+<li>Keep return/backtrack path alive. Better: always know last safe corridor.</li>
+<li>Battery reserve for return/land, not just mission completion.</li>
+</ul>
+<p>Pushback: autonomous indoor drones are noisy, risky, and fragile around household clutter. Validate capture/coverage with handheld or ground robot first if final product permits. Drone only needed for viewpoints not reachable otherwise.</p>
+</section>
+<section id="simulation-first" class="level2">
+<h2 class="anchored" data-anchor-id="simulation-first">Simulation first</h2>
+<p>Useful stacks:</p>
+<ul>
+<li><a href="https://docs.px4.io/main/en/simulation/">PX4 SITL</a> (Software-In-The-Loop; run flight stack on computer) + <a href="https://gazebosim.org/">Gazebo</a> <code>x500_depth</code> / <code>x500_vision</code> for depth/VIO drone simulation.</li>
+<li><a href="https://pegasussimulator.github.io/PegasusSimulator/">Pegasus Simulator</a> on <a href="https://developer.nvidia.com/isaac/sim">Isaac Sim</a> for multirotor + PX4/ArduPilot integration and richer sensors.</li>
+<li><a href="https://microsoft.github.io/AirSim/">AirSim</a> for legacy Unreal drone simulation; project is being archived, still useful for old research code.</li>
+<li><a href="https://github.com/facebookresearch/habitat-sim">Habitat-Sim</a> for very fast indoor embodied navigation experiments on <a href="https://niessner.github.io/Matterport/">Matterport3D</a> / <a href="https://aihabitat.org/datasets/hm3d/">HM3D</a> / <a href="https://github.com/facebookresearch/Replica-Dataset">Replica</a>, but not full drone physics.</li>
+</ul>
+<p>Sim goals:</p>
+<ul>
+<li>Validate data model and coverage ledger.</li>
+<li>Test frontier/NBV planner.</li>
+<li>Tune link-loss and estimator-loss behavior.</li>
+<li>Generate expected bandwidth/CPU budgets.</li>
+<li>Fail system safely before real props spin.</li>
+</ul>
+</section>
+<section id="staged-build-plan" class="level2">
+<h2 class="anchored" data-anchor-id="staged-build-plan">Staged build plan</h2>
+<section id="stage-0-non-flying-data-prototype" class="level3">
+<h3 class="anchored" data-anchor-id="stage-0-non-flying-data-prototype">Stage 0 — non-flying data prototype</h3>
+<ul>
+<li>Handheld RGB-D camera or phone LiDAR.</li>
+<li>Record nav frames + HQ frames + poses.</li>
+<li>Implement capture ledger and coverage visualization.</li>
+<li>Offline reconstruct from recorded data.</li>
+</ul>
+</section>
+<section id="stage-1-sim-drone" class="level3">
+<h3 class="anchored" data-anchor-id="stage-1-sim-drone">Stage 1 — sim drone</h3>
+<ul>
+<li>PX4 SITL + Gazebo/Isaac depth drone.</li>
+<li>ROS 2 map: RTAB-Map or nvblox.</li>
+<li>Frontier planner.</li>
+<li>Coverage ledger.</li>
+<li>Link-loss/failsafe tests.</li>
+</ul>
+</section>
+<section id="stage-2-safe-real-hoverwaypoints" class="level3">
+<h3 class="anchored" data-anchor-id="stage-2-safe-real-hoverwaypoints">Stage 2 — safe real hover/waypoints</h3>
+<ul>
+<li>Prop-guarded drone.</li>
+<li>External ground truth optional: <a href="https://april.eecs.umich.edu/software/apriltag/">AprilTag</a> fiducials, <a href="https://www.vicon.com/">Vicon</a> motion capture, <a href="https://en.wikipedia.org/wiki/SteamVR#Lighthouse">SteamVR Lighthouse</a> tracking for early tests.</li>
+<li>VIO/depth odometry to flight controller.</li>
+<li>One-room known-waypoint capture.</li>
+</ul>
+</section>
+<section id="stage-3-autonomous-one-room-exploration" class="level3">
+<h3 class="anchored" data-anchor-id="stage-3-autonomous-one-room-exploration">Stage 3 — autonomous one-room exploration</h3>
+<ul>
+<li>Unknown room.</li>
+<li>Frontier exploration with strict speed/clearance.</li>
+<li>PC shows live map + proposed next goals.</li>
+<li>HQ images stop-and-shoot.</li>
+</ul>
+</section>
+<section id="stage-4-multi-room-map-capture" class="level3">
+<h3 class="anchored" data-anchor-id="stage-4-multi-room-map-capture">Stage 4 — multi-room map + capture</h3>
+<ul>
+<li>Doorway handling.</li>
+<li>Loop closure.</li>
+<li>Room graph.</li>
+<li>Revisit under-covered surfaces.</li>
+<li>Offline 3DGS/photogrammetry chunked by room.</li>
+</ul>
+</section>
+<section id="stage-5-active-reconstruction" class="level3">
+<h3 class="anchored" data-anchor-id="stage-5-active-reconstruction">Stage 5 — active reconstruction</h3>
+<ul>
+<li>Replace heuristics with better NBV/active mapping.</li>
+<li>Add surface quality prediction.</li>
+<li>Maybe online splat/mesh confidence on PC.</li>
+</ul>
+</section>
+</section>
+<section id="key-open-problems" class="level2">
+<h2 class="anchored" data-anchor-id="key-open-problems">Key open problems</h2>
+<ul>
+<li>VIO drift/loss on blank walls, repetitive doors, glossy surfaces.</li>
+<li>Odometry frame resets confusing flight controller unless bridged carefully.</li>
+<li>ENU (East-North-Up), NED, and FRD (Front-Right-Down body frame) frame bugs causing flyaways.</li>
+<li>Wi-Fi loss exactly when behind walls/around corners.</li>
+<li>Motion blur and rolling shutter during aggressive motion.</li>
+<li>Door state changes between passes.</li>
+<li>Dynamic objects baked into map.</li>
+<li>Coverage metric mismatch: nav map says complete, final 3DGS still has holes.</li>
+<li>Battery too short for whole-house capture; need multi-session relocalization.</li>
+<li>Sound/safety/liability make consumer indoor flight hard.</li>
+</ul>
+</section>
+<section id="early-recommendation" class="level2">
+<h2 class="anchored" data-anchor-id="early-recommendation">Early recommendation</h2>
+<p>Build this as <strong>onboard-safe autonomy + PC-assisted active capture</strong>, not PC-flown drone.</p>
+<p>Initial target:</p>
+<ul>
+<li>PX4 + Jetson/VOXL-class companion.</li>
+<li>Stereo/RGB-D + IMU.</li>
+<li>Onboard VIO + local ESDF.</li>
+<li>PC global planner/coverage UI.</li>
+<li>Stop-and-shoot HQ stills saved onboard.</li>
+<li>Classical frontier + coverage heuristics before learned NBV/ActiveSplat.</li>
+</ul>
+<p>Shortest useful milestone: one-room autonomous map + capture ledger that correctly says: “wall behind couch under-covered; need view from doorway-left at 1.2m height, yaw 35°.”</p>
+</section>
+<section id="end-to-end-deep-learning-learned-navigation" class="level2">
+<h2 class="anchored" data-anchor-id="end-to-end-deep-learning-learned-navigation">End-to-end deep learning / learned navigation</h2>
+<p>There is real progress, but fielded systems are still mostly hybrid. Learned policies are replacing parts of nav, not whole safety stack.</p>
+<p>Main threads:</p>
+<ul>
+<li><strong>Visual nav foundation models</strong>: <a href="https://openreview.net/forum?id=s20TrAOus5ew">GNM</a>, <a href="https://arxiv.org/abs/2306.14846">ViNT</a>, <a href="https://arxiv.org/abs/2310.07896">NoMaD</a>. Camera history + goal image -&gt; short-horizon waypoints/actions. Strong real-robot results; still use topological graphs/frontiers for long horizon.</li>
+<li><strong>Neural SLAM / learned exploration</strong>: <a href="https://arxiv.org/abs/2004.05155">Active Neural SLAM</a>, <a href="https://arxiv.org/abs/1911.00357">DD-PPO</a>. Shows pure RL can work in sim with huge data, but modular learned mapper + planner is more sample-efficient and robust.</li>
+<li><strong>Drone agile flight</strong>: <a href="https://www.science.org/doi/10.1126/scirobotics.abg5810">Learning high-speed flight in the wild</a>, <a href="https://www.nature.com/articles/s41586-023-06419-4">Swift drone racing</a>. DL shines in local control/racing/obstacle avoidance. Swift is hybrid: VIO + gate detector + Kalman filter + RL controller.</li>
+<li><strong>Vision-language navigation</strong>: <a href="https://arxiv.org/abs/2312.03275">VLFM</a>, <a href="https://arxiv.org/abs/2407.07775">Mobility VLA</a>, <a href="https://arxiv.org/html/2412.04453v1">NaVILA</a>, <a href="https://arxiv.org/abs/2411.05755">VLMnav</a>. Useful for semantic goals (“inspect kitchen counter”), not safety-critical low-level flight.</li>
+<li><strong>Drone survey</strong>: <a href="https://arxiv.org/html/2312.05019v2">Vision-Based Learning for Drones</a> categorizes indirect, semi-direct, and end-to-end approaches.</li>
+</ul>
+<p>Why not full E2E (end-to-end) yet: safety proofs weak, OOD (out-of-distribution) failures, sim-to-real gap, long-horizon memory/coverage, limited crash data, hard debugging. For this project: use learned models for semantic understanding, capture-quality prediction, frontier/NBV scoring, local affordances; keep VIO/LIO + ESDF + flight-controller failsafes classical.</p>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<p>Autopilot/control:</p>
+<ul>
+<li><a href="https://docs.px4.io/main/en/flight_modes/offboard">PX4 Offboard Mode</a> — external setpoints, &gt;2Hz proof-of-life, offboard-loss failsafe.</li>
+<li><a href="https://docs.px4.io/main/en/computer_vision/visual_inertial_odometry">PX4 Visual Inertial Odometry</a> — VIO into PX4 EKF, external vision tuning.</li>
+<li><a href="https://px4.gitbook.io/px4-user-guide/drone_parts/companion_computer/computer_vision/path_planning_interface">PX4 Path Planning Interface</a> — companion-side planning setpoint interface, heartbeat/fallback behavior.</li>
+<li><a href="https://docs.px4.io/main/en/companion_computer/video_streaming_wfb_ng_wifi">PX4 WFB-ng WiFi video/telemetry link</a> — low-latency Wi-Fi broadcast transport reference.</li>
+<li><a href="https://ardupilot.org/dev/docs/mavlink-nongps-position-estimation.html">ArduPilot Non-GPS Position Estimation</a> — external nav via MAVLink <code>ODOMETRY</code>, &gt;=4Hz.</li>
+<li><a href="https://ardupilot.org/dev/docs/copter-commands-in-guided-mode.html">ArduPilot Guided Mode commands</a> — MAVLink local/global setpoint commands.</li>
+</ul>
+<p>Mapping/SLAM:</p>
+<ul>
+<li><a href="https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_visual_slam">Isaac ROS Visual SLAM</a> — GPU stereo VIO/SLAM; docs say usable as primary drone odometry source.</li>
+<li><a href="https://nvidia-isaac-ros.github.io/v/release-4.4/concepts/scene_reconstruction/nvblox/technical_details.html">Isaac ROS nvblox technical details</a> — TSDF/ESDF layers for reconstruction and planning.</li>
+<li><a href="https://github.com/introlab/rtabmap_ros/">RTAB-Map ROS</a> — ROS 2 RGB-D/stereo/3D LiDAR SLAM wrapper.</li>
+<li><a href="https://github.com/hku-mars/FAST_LIO/tree/ROS2">FAST-LIO ROS2</a> — LiDAR-inertial odometry baseline with UAV examples.</li>
+<li><a href="https://colmap.github.io/">COLMAP</a> — offline SfM/MVS baseline used by many 3DGS/photogrammetry pipelines.</li>
+<li><a href="https://github.com/UZ-SLAMLab/ORB_SLAM3">ORB-SLAM3</a> — visual / visual-inertial SLAM research baseline.</li>
+</ul>
+<p>Autonomy/frameworks/planning:</p>
+<ul>
+<li><a href="https://aerostack2.github.io/">Aerostack2</a> — ROS 2 framework for aerial robot autonomy.</li>
+<li><a href="https://github.com/LTU-RAI/ExplorationRRT">ExplorationRRT</a> — tree-based next-best-trajectory method for 3D UAV exploration.</li>
+<li><a href="https://github.com/RaccoonlabDev/nbv_exploration_planner">NBV Exploration Planner</a> — real-time MAV next-best-view planner.</li>
+<li><a href="https://li-yuetao.github.io/ActiveSplat/">ActiveSplat</a> — active Gaussian-splatting reconstruction with online mapping/planning.</li>
+<li><a href="https://github.com/zjwzcx/GenNBV">GenNBV</a> — CVPR (Computer Vision and Pattern Recognition conference) 2024 generalizable NBV policy.</li>
+<li><a href="https://github.com/shiyao-li/NextBestPath">NextBestPath</a> — ICLR (International Conference on Learning Representations) 2025 next-best-path active mapping.</li>
+</ul>
+<p>Simulation:</p>
+<ul>
+<li><a href="https://px4.gitbook.io/px4-user-guide/development/simulation/sim_gazebo_gz.md">PX4 Gazebo Simulation</a> — <code>x500_depth</code>, <code>x500_vision</code>, SITL.</li>
+<li><a href="https://pegasussimulator.github.io/PegasusSimulator/">Pegasus Simulator</a> — Isaac Sim multirotor simulator with PX4 integration.</li>
+<li><a href="https://microsoft.github.io/AirSim/">AirSim</a> — Unreal drone simulator, legacy/archived but still useful.</li>
+<li><a href="https://github.com/facebookresearch/habitat-sim">Habitat-Sim</a> — high-speed indoor embodied AI simulator over Matterport/HM3D/Replica scenes.</li>
+</ul>
+<p>Photogrammetry capture:</p>
+<ul>
+<li><a href="https://manuals-ugcs.sphengineering.com/docs/photogrammetry-area">UgCS Photogrammetry area</a> — overlap/GSD/flight-grid concepts, useful though outdoor-oriented.</li>
+</ul>
+</section>
+<section id="study-list-for-autonomous-navigation-beginners" class="level2">
+<h2 class="anchored" data-anchor-id="study-list-for-autonomous-navigation-beginners">Study list for autonomous navigation beginners</h2>
+<p>Best path: learn ground-robot navigation first. Same loop: localization → mapping → planning → control. Drone adds 3D motion, tighter safety, worse odometry, shorter time budgets.</p>
+<section id="watch-first" class="level3">
+<h3 class="anchored" data-anchor-id="watch-first">Watch first</h3>
+<ol type="1">
+<li><a href="https://www.mathworks.com/videos/series/autonomous-navigation.html">MathWorks Autonomous Navigation video series</a> — best beginner overview. Covers localization, particle filters, SLAM/pose graphs, A* and RRT path planning.</li>
+<li><a href="https://www.ipb.uni-bonn.de/online-training-robotics/">Cyrill Stachniss online mobile robotics / SLAM training</a> — excellent free SLAM lectures. More academic, worth it.
+<ul>
+<li><a href="https://www.youtube.com/watch?v=v-Rm9TUG9LA">Occupancy Grid Maps</a></li>
+<li><a href="https://www.youtube.com/watch?v=X30sEgIws0g">EKF-SLAM</a></li>
+<li><a href="https://www.ipb.uni-bonn.de/robot-mapping/">Robot Mapping course page</a></li>
+</ul></li>
+<li><a href="https://sparks.learning.asu.edu/videos/how-visual-inertial-odometry-slam-work">How Visual Inertial Odometry &amp; SLAM Work</a> — good intuition for camera + IMU tracking.</li>
+<li><a href="https://www.mathworks.com/videos/autonomous-navigation-part-4-path-planning-with-a-and-rrt-1594987710455.html">Path Planning with A* and RRT</a> — quick path-planning mental model.</li>
+</ol>
+</section>
+<section id="read-next" class="level3">
+<h3 class="anchored" data-anchor-id="read-next">Read next</h3>
+<ol start="5" type="1">
+<li><a href="https://docs.px4.io/main/en/computer_vision/visual_inertial_odometry">PX4 Visual Inertial Odometry</a> — practical drone-specific VIO into flight controller.</li>
+<li><a href="https://docs.px4.io/main/en/flight_modes/offboard">PX4 Offboard Mode</a> — crucial: why Wi-Fi PC should not directly fly drone.</li>
+<li><a href="https://docs.modalai.com/flying-with-vio/">ModalAI Flying with VIO</a> — concrete drone VIO setup.</li>
+<li><a href="https://www.thinkautonomous.ai/blog/visual-inertial-odometry/">Visual Inertial Odometry Explained</a> — accessible VIO article.</li>
+<li><a href="https://automaticaddison.com/what-is-an-occupancy-grid-map/">What is an Occupancy Grid Map?</a> — basic free/occupied/unknown map representation.</li>
+<li><a href="https://awabot.com/en/autonomous-exploration-method-frontiers/">Frontier-Based Exploration</a> — core “where do we go next?” exploration idea.</li>
+</ol>
+</section>
+<section id="hands-on-software-docs" class="level3">
+<h3 class="anchored" data-anchor-id="hands-on-software-docs">Hands-on software docs</h3>
+<ol start="11" type="1">
+<li><a href="https://docs.nav2.org/getting_started/index.html">ROS 2 Nav2 Getting Started</a> — ground robot stack, but core map/costmap/planner/controller concepts transfer.</li>
+<li><a href="https://roboticsbackend.com/ros2-nav2-tutorial/">ROS2 Nav2 Tutorial</a> — practical walkthrough.</li>
+<li><a href="https://github.com/introlab/rtabmap_ros/">RTAB-Map ROS</a> — practical RGB-D/stereo SLAM stack.</li>
+<li><a href="https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_visual_slam">Isaac ROS Visual SLAM</a> — NVIDIA/Jetson path for stereo VIO.</li>
+<li><a href="https://nvidia-isaac-ros.github.io/concepts/scene_reconstruction/nvblox/tutorials/tutorial_realsense.html">Isaac ROS nvblox RealSense tutorial</a> — depth → 3D reconstruction + collision map.</li>
+</ol>
+</section>
+<section id="drone-specific-examples" class="level3">
+<h3 class="anchored" data-anchor-id="drone-specific-examples">Drone-specific examples</h3>
+<ol start="16" type="1">
+<li><a href="https://gaas.gitbook.io/guide/software-realization-build-your-own-autonomous-drone/build-your-own-autonomous-drone-part-3-using-slam-in-gps-denied-environment-for-position-estimation">GAAS: Using SLAM in GPS-denied drone environment</a> — older, useful bridge between PX4, ROS, and SLAM.</li>
+<li><a href="https://www.andrewbernas.com/docs/tutorials/robots/vslam">GPS-denied UAV with Visual SLAM</a> — modern-ish practical stack: Isaac ROS VSLAM + MAVROS + PX4.</li>
+<li><a href="https://www.youtube.com/watch?v=VEXTClBmN4M">PX4 Developer Summit: Non-GPS Indoor Navigation</a> — drone-specific overview.</li>
+</ol>
+</section>
+<section id="later-advanced" class="level3">
+<h3 class="anchored" data-anchor-id="later-advanced">Later / advanced</h3>
+<ol start="19" type="1">
+<li><a href="https://github.com/LTU-RAI/ExplorationRRT">ExplorationRRT</a> — next-best-trajectory exploration for UAVs.</li>
+<li><a href="https://li-yuetao.github.io/ActiveSplat/">ActiveSplat</a> — active reconstruction + Gaussian splatting.</li>
+<li><a href="https://github.com/zjwzcx/GenNBV">GenNBV</a> — learned next-best-view; read after classical frontier/RRT makes sense.</li>
+</ol>
+<p>Suggested order: MathWorks series → occupancy grids + frontier exploration → Stachniss SLAM lectures → PX4 VIO/Offboard docs → Nav2 or RTAB-Map hands-on → Isaac ROS/nvblox if using Jetson → ExplorationRRT/ActiveSplat later.</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/xl0\.github\.io\/exploring-edge-perf");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
